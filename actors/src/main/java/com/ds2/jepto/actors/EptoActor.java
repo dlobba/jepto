@@ -29,8 +29,6 @@ public class EptoActor extends CyclonActor {
 	public static class RoundMsg implements Serializable {};
 	public static class GenEventMsg implements Serializable {};
 	
-	
-	
 	public final long MAX_TTL;
 	public final int  NUM_RECEIVERS; // it's the K in the paper
 	
@@ -191,9 +189,9 @@ public class EptoActor extends CyclonActor {
 		// received and delivered are used only within this
 		// method. Hence no concurrent access should be
 		// of concern (hopefully)
-		ball.incrementTtl();
+		received.incrementTtl();
 		for (Event event : ball.toList()) {
-			if (this.delivered.contains(new EventKey(event)) &&
+			if (!this.delivered.contains(new EventKey(event)) &&
 					event.getTimestamp() >= this.lastDeliveredTs) {
 				if (this.received.contains(event)) {
 					if (this.received.get(event).getTtl() < event.getTtl()) {
@@ -204,9 +202,9 @@ public class EptoActor extends CyclonActor {
 				}
 			}
 		}
+
 		long minTs = Long.MAX_VALUE;
 		EventMap deliverable = new EventMap();
-		
 		for (Event event : this.received.toList()) {
 			if (isDeliverable(event)) {
 				deliverable.insert(event);
@@ -222,7 +220,6 @@ public class EptoActor extends CyclonActor {
 			}
 		}
 		for (Event event : deliverable.toSortedList()) {
-			System.out.println("delivery...");
 			this.delivered.add(new EventKey(event));
 			this.lastDeliveredTs = event.getTimestamp();
 			this.deliver(event);
@@ -287,7 +284,7 @@ public class EptoActor extends CyclonActor {
 		.getSystem()
 		.scheduler()
 		.scheduleOnce(Duration.create(
-				new Random(this.SEED).nextLong() % this.genEventInterval + 2000,
+				(new Random(this.SEED).nextLong() % this.genEventInterval) + 10000,
 				TimeUnit.MILLISECONDS),
 				this.getSelf(),
 				new GenEventMsg(),
