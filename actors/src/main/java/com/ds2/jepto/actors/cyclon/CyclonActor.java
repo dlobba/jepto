@@ -15,19 +15,20 @@ import java.util.concurrent.TimeUnit;
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
+import akka.japi.pf.ReceiveBuilder;
 import scala.concurrent.duration.Duration;
 
 public class CyclonActor extends AbstractActor {
 	
 	public static class AgingMsg implements Serializable {};
-	public static class DebugMsg implements Serializable {};
 	private static class ShufflingMsg implements Serializable {};
 
-	private long seed;
-	private long maxAge;
+	private final long seed;
 	private long shufflePeriod;
 	private int  cacheSize;
 	private int msgId;
+	
+	private boolean debugCache;
 	
 	private CyclonShufflingMsg buffer;
 	
@@ -43,26 +44,44 @@ public class CyclonActor extends AbstractActor {
 	 */
 	private Map<ActorRef, Long> cache;
 	
-	public CyclonActor(int cacheSize, int shuffleLength, long maxAge, long shufflePeriod, long seed) {
+	public CyclonActor(int cacheSize, int shuffleLength, long shufflePeriod, long seed) {
 		super();
 		this.cacheSize = cacheSize;
 		this.shuffleLength = shuffleLength;
-		this.maxAge = maxAge;
+		if (shuffleLength > cacheSize)
+			this.shuffleLength = cacheSize;
 		this.shufflePeriod = shufflePeriod;
 		this.seed = seed;
 		this.cache = new HashMap<ActorRef, Long>();
 		this.buffer = null;
 		this.msgId = 0;
+		this.debugCache = false;
 	}
 
-	public static Props props(int cacheSize, int shuffleLength, long maxAge, long shufflePeriod, long seed) {
+	public static Props props(int cacheSize, int shuffleLength, long shufflePeriod, long seed) {
 		return Props.create(CyclonActor.class,
-				() -> new CyclonActor(cacheSize, shuffleLength, maxAge, shufflePeriod, seed));
+				() -> new CyclonActor(cacheSize, shuffleLength, shufflePeriod, seed));
+	}
+
+	public int getCacheSize() {
+		return cacheSize;
+	}
+
+	/**
+	 * Return a new copy of the cache.
+	 * @return
+	 */
+	public Map<ActorRef, Long> getCache() {
+		synchronized (cache) {
+			return new HashMap<>(cache);
+		}
 	}
 
 	private void onJoinMsg(JoinMsg msg) {
 		if (cache.size() < this.cacheSize)
 			cache.put(msg.getTracker(), 0l);
+		// start exchanging entries
+		sendShufflingMsg();
 	}
 	/**
 	 * 
@@ -89,24 +108,29 @@ public class CyclonActor extends AbstractActor {
 				}
 			}
 			Iterator<ActorRef> shuffledIter = shuffledElements.iterator();
-			ActorRef tmp = shuffledIter.next();
+			ActorRef tmp;
 			for (ActorRef newActor : other2.keySet()) {
-				if (cache.size() <= this.cacheSize ) {
+				if (cache.size() < this.cacheSize ) {
 					cache.put(newActor, other2.get(newActor));
 				} else {
 					// replace previously sent entry with new one
-					if (cache.containsKey(tmp)) {
-						cache.remove(tmp);
-						cache.put(newActor, other2.get(newActor));
-						
-						if (shuffledIter.hasNext())
-							tmp = shuffledIter.next();
-						else
-							break;
+					if (shuffledIter.hasNext()) {
+						tmp = shuffledIter.next();
+						if (cache.containsKey(tmp)) {
+							cache.remove(tmp);
+							cache.put(newActor, other2.get(newActor));
+						}
 					}
+					else
+						break;
 				}
 			}
 		}
+		if (debugCache) {
+			String dbg = this.self().path().name() + "\n" + printCache();
+			System.out.println(dbg);
+		}
+			
 	}
 	
 	private ActorRef selectNeighbour() {
@@ -126,7 +150,6 @@ public class CyclonActor extends AbstractActor {
 	 */
 	private Map<ActorRef, Long> selectOthersFrom(int numOthers, Map<ActorRef, Long> copyCache) {
 		Random rnd = new Random(this.seed);
-		
 		List<ActorRef> listActors = new ArrayList<ActorRef>(copyCache.keySet());
 		Collections.shuffle(listActors, rnd);
 		int index = 0;
@@ -210,18 +233,31 @@ public class CyclonActor extends AbstractActor {
 	}
 	
 	private void onDebugMsg(DebugMsg msg) {
-		String dbg = this.self().path().name() + "\n" + printCache();
-		System.out.println(dbg);
+		switch (msg.getType()) {
+		case TRACE_CACHE:
+			this.debugCache = true;
+			break;
+		case DIE:
+			this.getContext().stop(this.getSelf());
+			break;
+		default:
+			String dbg = this.self().path().name() + "\n" + printCache();
+			System.out.println(dbg);
+			break;
+		}
 	}
 
-	@Override
-	public Receive createReceive() {
+	public ReceiveBuilder createBuilder() {
 		return receiveBuilder()
 				.match(JoinMsg.class, this::onJoinMsg)
 				.match(DebugMsg.class, this::onDebugMsg)
 				.match(ShufflingMsg.class, this::onShufflingMsg)
 				.match(RequestMsg.class, this::onRequestMsg)
-				.match(ReplyMsg.class, this::onReplyMsg)
-				.build();
+				.match(ReplyMsg.class, this::onReplyMsg);
+	}
+
+	@Override
+	public Receive createReceive() {
+		return this.createBuilder().build();
 	}
 }
