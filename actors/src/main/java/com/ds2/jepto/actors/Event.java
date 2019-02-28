@@ -62,4 +62,11 @@ public class Event {
 		this.timestamp = timestamp;
 	}
 	
+	@Override
+	public String toString() {
+		return "Event [timestamp=" + timestamp +
+				", source=" + source.path().name() +
+				", id=" + id +
+				", action=" + action + "]";
+	}
 }

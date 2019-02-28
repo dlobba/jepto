@@ -11,6 +11,12 @@ public class Ball {
 	public Ball() {
 		this.events = new ArrayList<>();
 	}
+
+	public Ball clone() {
+		Ball newBall = new Ball();
+		newBall.events = new ArrayList<>(this.events);
+		return newBall;
+	}
 	
 	public void insert(Event event) {
 		this.events.add(event);
@@ -40,10 +46,8 @@ public class Ball {
 	}
 	
 	public void incrementTtl() {
-		synchronized (events) {
-			for (Event event : events) {
-				event.setTtl(event.getTtl() + 1);
-			}
+		for (Event event : events) {
+			event.setTtl(event.getTtl() + 1);
 		}
 	}
 	
@@ -58,5 +62,9 @@ public class Ball {
 	
 	public boolean isEmpty() {
 		return this.events.isEmpty();
+	}
+	
+	public void clear() {
+		this.events.clear();
 	}
 }

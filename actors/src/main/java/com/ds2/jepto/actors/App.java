@@ -3,6 +3,8 @@ package com.ds2.jepto.actors;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.ds2.jepto.actors.cyclon.CyclonActor;
 import com.ds2.jepto.actors.cyclon.DebugMsg;
@@ -14,6 +16,8 @@ import akka.actor.ActorSystem;
 
 
 public class App {
+	
+	private static final Logger LOGGER = Logger.getLogger(App.class.getName());
 	
 	/**
 	 * Create two Cyclon actors A and B.
@@ -120,10 +124,64 @@ public class App {
 		}
 	}
 	
+	public static void testEpto1(
+			long max_ttl,
+			long roundInterval,
+			int viewSize,
+			int numActors,
+			int shuffleLength) {
+		ActorSystem system = ActorSystem.create("EptoMain");
+		int numReceivers = viewSize / 3;
+		
+		List<ActorRef> actors = new ArrayList<>();
+		for(int i = 0; i < numActors; i++) {
+			actors.add(system.actorOf(EptoActor.props(
+					max_ttl,
+					numReceivers,
+					roundInterval,
+					viewSize,
+					shuffleLength,
+					500l,
+					42l),"actor_" + i));
+		}
+		
+		// create a star topology centered at the
+		// first element of the list
+		try {
+			ActorRef center1 = actors.get(0);
+			ActorRef center2 = actors.get(numActors - 1);
+			for(int i = 1; i < numActors / 2; i++) {
+				actors.get(i).tell(new JoinMsg(center1), null);
+				Thread.sleep(100l);
+			}
+			for(int i = numActors / 2 + 1 ; i < numActors - 1; i++) {
+				actors.get(i).tell(new JoinMsg(center2), null);
+				//Thread.sleep(100l);
+			}
+			actors.get(numActors / 2).tell(new JoinMsg(center2), null);
+			actors.get(numActors / 2).tell(new JoinMsg(center1), null);
+
+			ActorRef traced = actors.get((new Random()).nextInt(numActors-2)+1);
+			//traced.tell(new DebugMsg(DebugType.TRACE_CACHE), null);
+			Thread.sleep(5000l);
+			
+			center1.tell(new DebugMsg(DebugType.DIE), null);
+			//center2.tell(new DebugMsg(DebugType.DIE), null);
+			
+			Thread.sleep(5000l);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+//		for(int i = 0; i < numActors; i++) {
+//			actors.get(i).tell(new DebugMsg(), null);
+//		}
+	}
 	
     public static void main( String[] args ) {
+    	//LOGGER.setLevel(Level.INFO);
     	//testJoin();
-    	test2(1000, 50, 5);
-    	
+    	//test2(1000, 50, 5);
+    	testEpto1(3l, 5000l, 10, 20, 5);
     }
 }

@@ -177,15 +177,17 @@ public class CyclonActor extends AbstractActor {
 		synchronized (cache) {
 			increaseAge();
 			ActorRef q = selectNeighbour();
-			Map<ActorRef, Long> copyCache = new HashMap<>(this.cache);
-			copyCache.remove(q);
-			copyCache = selectOthersFrom(this.shuffleLength - 1, copyCache);
-			copyCache.put(q, cache.get(q)); // owltrick
-			this.buffer = new CyclonShufflingMsg(msgId, copyCache, this.getSelf(), q);
-			copyCache.remove(q);
-			copyCache.put(this.getSelf(), 0l);
-			RequestMsg r = new RequestMsg(msgId++, copyCache, this.getSelf(), q);
-			q.tell(r, this.getSelf());
+			if (q != null) {
+				Map<ActorRef, Long> copyCache = new HashMap<>(this.cache);
+				copyCache.remove(q);
+				copyCache = selectOthersFrom(this.shuffleLength - 1, copyCache);
+				copyCache.put(q, cache.get(q)); // owltrick
+				this.buffer = new CyclonShufflingMsg(msgId, copyCache, this.getSelf(), q);
+				copyCache.remove(q);
+				copyCache.put(this.getSelf(), 0l);
+				RequestMsg r = new RequestMsg(msgId++, copyCache, this.getSelf(), q);
+				q.tell(r, this.getSelf());
+			}
 		}
 		sendShufflingMsg();
 	}
