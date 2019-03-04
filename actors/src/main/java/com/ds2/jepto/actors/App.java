@@ -3,6 +3,7 @@ package com.ds2.jepto.actors;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -18,7 +19,7 @@ import akka.actor.ActorSystem;
 public class App {
 	
 	private static final Logger LOGGER = Logger.getLogger(App.class.getName());
-	
+	FileHandler loggerFileHandler;
 	/**
 	 * Create two Cyclon actors A and B.
 	 * Let each actor send a join message to the other.
