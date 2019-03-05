@@ -8,16 +8,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.FileHandler;
-import java.util.logging.Formatter;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 import java.util.stream.Collectors;
@@ -161,12 +158,16 @@ public class EptoActor extends CyclonActor {
 		synchronized (nextBall) {
 			this.nextBall.insert(event);
 		}
-		// TODO: add broadcast logging
+		LOGGER.log(Level.INFO,
+				"EpTO: {0} broadcast {1}",
+				new Object[] {
+						this.getSelf().path().name(),
+						event.toString()});
 	}
 
 	private void onBallMsg(BallMsg msg) {
 		LOGGER.log(Level.INFO,
-				"Actor {0} received a ball from {1}\n",
+				"EpTO: {0} received_ball_from {1}",
 				new Object[] {
 						this.getSelf().path().name(),
 						this.getSender().path().name()});
@@ -194,10 +195,14 @@ public class EptoActor extends CyclonActor {
 
 	private void onRoundMsg(RoundMsg msg) {
 		Ball ball;
-		StringBuilder debugStr = new StringBuilder();
-		debugStr.append("Actor " + this.getSelf().path().name() +
-				" sent ball to:\t");
+		String arrayString = "";
 		synchronized (this.nextBall) {
+			if (this.nextBall.isEmpty()) {
+				// if nothing to send, just schedule
+				// new round message and exit
+				sendRoundMsg();
+				return;
+			}
 			this.nextBall.incrementTtl();
 			ball = this.nextBall.clone();
 			this.nextBall.clear();
@@ -208,16 +213,16 @@ public class EptoActor extends CyclonActor {
 			for (ActorRef peer : peers) {
 				peer.tell(ballMsg, this.getSelf());
 			}
-			debugStr.append(String.join(", ",
+			arrayString = String.join(", ",
 					peers.stream()
 					.map(peer -> peer.path().name())
-					.collect(Collectors.toList())));
-			
-			LOGGER.log(Level.INFO,
-					"{0}",
-					debugStr.toString());
-//			System.out.printf("%s\n", debugStr.toString());
+					.collect(Collectors.toList()));
 		}
+		LOGGER.log(Level.INFO,
+				"EpTO: {0} sent_ball_to {1}",
+				new Object[] {
+						this.getSelf().path().name(),
+						arrayString});
 		this.orderEvents(ball);
 		sendRoundMsg();
 	}
@@ -278,13 +283,10 @@ public class EptoActor extends CyclonActor {
 
 	private void deliver(Event event) {
 		LOGGER.log(Level.INFO,
-				"Actor {0} delivered {1}",
+				"EpTO: {0} delivered {1}",
 				new Object[] {
 						this.getSelf().path().name(),
 						event.toString()});
-//		System.out.printf("Actor %s delivered %s\n",
-//				this.getSelf().path().name(),
-//				event.toString());
 	}
 	
 	private void onGenEventMsg(GenEventMsg msg) {
@@ -298,9 +300,6 @@ public class EptoActor extends CyclonActor {
 //				new Object[] {
 //						this.getSelf().path().name(),
 //						newEvent.toString()});
-//		System.out.printf("Actor %s generated %s\n",
-//				this.getSelf().path().name(),
-//				newEvent.toString());
 		sendGenEventMsg();
 	}
 	
