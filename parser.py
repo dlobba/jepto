@@ -2,6 +2,7 @@
 import re
 import sys
 
+import total_order as to
 
 class ParseEventException(Exception):
     def __init__(self, message=None):
@@ -66,5 +67,18 @@ def parse_logs(log_file):
                 
 
 if __name__ == "__main__":
-    b, d, do = parse_logs(sys.argv[1])
-    
+    b, d, delivery_order = parse_logs(sys.argv[1])
+
+    for actor1, order1 in delivery_order.items():
+        for actor2, order2 in delivery_order.items():
+            torder_satisfied, relation =  to.total_order(order1, order2)
+            if not torder_satisfied:
+                str_index, el1, el2 = relation
+                if str_index is 0:
+                    actor = actor1
+                else:
+                    actor = actor2
+                raise to.OOOException("actor {} and {}"\
+                                      " have different delivery order: "\
+                                      "{} has {}->{}"
+                                      .format(actor1, actor2, actor, el1, el2))
