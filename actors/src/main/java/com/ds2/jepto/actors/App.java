@@ -1,11 +1,13 @@
 package com.ds2.jepto.actors;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.FileHandler;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 import com.ds2.jepto.actors.cyclon.CyclonActor;
 import com.ds2.jepto.actors.cyclon.DebugMsg;
@@ -18,8 +20,30 @@ import akka.actor.ActorSystem;
 
 public class App {
 	
-	private static final Logger LOGGER = Logger.getLogger(App.class.getName());
-	FileHandler loggerFileHandler;
+	private static final Logger LOGGER = Logger.getLogger("");
+	private static FileHandler loggerFileHandler;
+	
+	private static void createExecutionLogFile() {
+		try {
+			// create a specific log for the actor
+			String path = System.getProperty("user.home") + File.separator
+					+ "EpTOlogs" + File.separator + "execution.log";
+			File targetFile = new File(path);
+			File parent = targetFile.getParentFile();
+			if (!parent.mkdirs() && !parent.exists()) {
+			    throw new IllegalStateException("Couldn't create dir: " + parent);
+			}
+			loggerFileHandler = new FileHandler(path);
+			LOGGER.addHandler(loggerFileHandler);
+			SimpleFormatter sf = new SimpleFormatter();
+			loggerFileHandler.setFormatter(sf);
+		} catch (SecurityException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	/**
 	 * Create two Cyclon actors A and B.
 	 * Let each actor send a join message to the other.
@@ -180,7 +204,7 @@ public class App {
 	}
 	
     public static void main( String[] args ) {
-    	//LOGGER.setLevel(Level.INFO);
+    	createExecutionLogFile();
     	//testJoin();
     	//test2(1000, 50, 5);
     	testEpto1(3l, 5000l, 10, 20, 5);

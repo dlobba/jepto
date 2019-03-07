@@ -1,8 +1,12 @@
 package com.ds2.jepto.actors;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 import com.ds2.jepto.actors.cyclon.JoinMsg;
 import com.typesafe.config.Config;
@@ -20,7 +24,10 @@ import scala.concurrent.Future;
 
 public class ActorMain {
 
-	private static final Logger LOGGER = Logger.getLogger(App.class.getName());
+	// the logger to be recorder to file is the one related to
+	// EptoActor, not to ActorMain
+	private static final Logger LOGGER = Logger.getLogger(EptoActor.class.getName());
+	private static FileHandler  loggerFileHandler;
 	
 	private static final String SYSTEM_NAME = "epto";
 	private static long  SEED = 42;
@@ -31,6 +38,27 @@ public class ActorMain {
 	private static long max_ttl       = 5;
 	private static long roundInterval = 5000l;
 	private static long shufflePeriod = 3000l;
+	
+	private static void createActorLogFile(String actorName) {
+		try {
+			// create a specific log for the actor
+			String path = System.getProperty("user.home") + File.separator
+					+ "EpTOlogs" + File.separator + actorName + ".log";
+			File targetFile = new File(path);
+			File parent = targetFile.getParentFile();
+			if (!parent.mkdirs() && !parent.exists()) {
+			    throw new IllegalStateException("Couldn't create dir: " + parent);
+			}
+			loggerFileHandler = new FileHandler(path);
+			LOGGER.addHandler(loggerFileHandler);
+			SimpleFormatter sf = new SimpleFormatter();
+			loggerFileHandler.setFormatter(sf);
+		} catch (SecurityException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 	
 	private static boolean isTracker(Config config) {
 		if (!config.hasPath("participant.is_tracker"))
@@ -48,7 +76,6 @@ public class ActorMain {
         if (!config.hasPath("participant.id"))
         	return false;
 		return true;
-		
 	}
 
 
@@ -77,6 +104,7 @@ public class ActorMain {
 	        		shufflePeriod,
 	        		SEED),
 	        		participantId);
+			createActorLogFile(participantId);
 			LOGGER.log(Level.INFO, "Tracker {0} started.",
 					actor.path().name());
 		} else if (isPeer(actorConfig)) {
@@ -98,18 +126,20 @@ public class ActorMain {
 			// Let the node send a join request
 			// to the tracker it knows
 	        ActorSelection trackerSelection = system.actorSelection(trackerPath);
-
+	        // retrieve the tracker actor reference
 	        try {
 				Timeout timeout = new Timeout(5, TimeUnit.SECONDS);
 				Future<Object> future = Patterns.ask(trackerSelection, new Identify(""), timeout);
 				ActorIdentity reply = (ActorIdentity) Await.result(future, timeout.duration());
 				tracker = reply.ref().get();
 			} catch (Exception e) {
-				LOGGER.log(Level.SEVERE, "The tracker requested didn't reply." +
+				LOGGER.log(Level.SEVERE, "The requested tracker didn't reply." +
 						" TERMINATING...");
 				System.exit(-1);
 			}
-	        
+	        createActorLogFile(participantId);
+	        LOGGER.log(Level.INFO, "Peer {0} started.",
+					actor.path().name());
 	        actor.tell(new JoinMsg(tracker), null);
 		} else {
 			// Invalid settings, terminate

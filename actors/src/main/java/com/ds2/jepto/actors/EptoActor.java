@@ -1,7 +1,5 @@
 package com.ds2.jepto.actors;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,10 +11,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 import java.util.stream.Collectors;
 
 import com.ds2.jepto.actors.Event.Action;
@@ -29,28 +25,6 @@ import scala.concurrent.duration.Duration;
 public class EptoActor extends CyclonActor {
 
 	private static final Logger LOGGER = Logger.getLogger(EptoActor.class.getName());
-	private FileHandler loggerFileHandler;
-	
-	private void createLogFile() {
-		try {
-			// create a specific log for the actor
-			String path = System.getProperty("user.home") + File.separator
-					+ "EpTOlogs" + File.separator + this.self().path().name() + ".log";
-			File targetFile = new File(path);
-			File parent = targetFile.getParentFile();
-			if (!parent.mkdirs() && !parent.exists()) {
-			    throw new IllegalStateException("Couldn't create dir: " + parent);
-			}
-			this.loggerFileHandler = new FileHandler(path);
-			LOGGER.addHandler(loggerFileHandler);
-			SimpleFormatter sf = new SimpleFormatter();
-			this.loggerFileHandler.setFormatter(sf);
-		} catch (SecurityException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
 	
 	public static class RoundMsg implements Serializable {};
 	public static class GenEventMsg implements Serializable {};
@@ -93,7 +67,6 @@ public class EptoActor extends CyclonActor {
 		this.lastDeliveredTs = 0l;
 		sendRoundMsg(); // start first round
 		sendGenEventMsg();
-		createLogFile();
 	}
 	
 	public static Props props(
