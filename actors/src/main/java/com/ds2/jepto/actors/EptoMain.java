@@ -86,7 +86,7 @@ public class EptoMain {
 		tracker = createActor(system, "tracker_0");
 		List<ActorRef> peers = new ArrayList<>();
 		for(int i = 1; i < numActors; i++) {
-			peers.add(createActor(system, "peer_" + i));
+			peers.add(createActor(system, "actor_" + i));
 		}
 
 		// create a star topology centered at the
