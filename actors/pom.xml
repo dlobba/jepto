@@ -61,12 +61,12 @@
 					<mainClass>com.ds2.jepto.actors.ActorMain</mainClass>
 					<arguments>
 					</arguments>
-					<!-- <systemProperties>
+					<systemProperties>
 						<systemProperty>
-							<key>myproperty</key>
-							<value></value>
+							<key>config.resource.default</key>
+							<value>peer_factory.conf</value>
 						</systemProperty>
-					</systemProperties> -->
+					</systemProperties>
 				</configuration>
 			</plugin>
 		</plugins>
