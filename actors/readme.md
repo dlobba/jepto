@@ -10,5 +10,13 @@ EpTO
   Invoke the actor with the following
 
   ```
-  mvn exec:java -Dconfig.resource=tracker_0.conf
+  mvn exec:java@network -Dconfig.resource=tracker_0.conf
   ```
+
+* to run a single threaded execution, defined by the `EptoMain` class,
+  run the following:
+
+  ```
+  mvn exec:java@single -Dactors.num=20
+  ```
+
