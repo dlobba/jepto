@@ -51,23 +51,46 @@
 				<artifactId>exec-maven-plugin</artifactId>
 				<version>1.2.1</version>
 				<executions>
+					<!-- ************************************************** -->
+					<!-- Networked execution -->
 					<execution>
+						<id>network</id>
 						<goals>
 							<goal>java</goal>
 						</goals>
+						<configuration>
+							<mainClass>com.ds2.jepto.actors.ActorMain</mainClass>
+							<arguments>
+							</arguments>
+							<systemProperties>
+								<systemProperty>
+									<key>config.resource.default</key>
+									<value>peer_factory.conf</value>
+								</systemProperty>
+							</systemProperties>
+						</configuration>
 					</execution>
+					<!-- ************************************************** -->
+					<!-- Single main execution -->
+					<execution>
+						<id>single</id>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<mainClass>com.ds2.jepto.actors.EptoMain</mainClass>
+							<arguments>
+							</arguments>
+							<systemProperties>
+								<systemProperty>
+									<key>actors.num.default</key>
+									<value>10</value>
+								</systemProperty>
+							</systemProperties>
+						</configuration>
+					</execution>
+					<!-- ************************************************** -->
 				</executions>
-				<configuration>
-					<mainClass>com.ds2.jepto.actors.ActorMain</mainClass>
-					<arguments>
-					</arguments>
-					<systemProperties>
-						<systemProperty>
-							<key>config.resource.default</key>
-							<value>peer_factory.conf</value>
-						</systemProperty>
-					</systemProperties>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>
