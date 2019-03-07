@@ -1,8 +1,10 @@
 package com.ds2.jepto.actors;
 
+import java.io.Serializable;
+
 import akka.actor.ActorRef;
 
-public class Event {
+public class Event implements Serializable {
 	
 	enum Action {
 		DO,
