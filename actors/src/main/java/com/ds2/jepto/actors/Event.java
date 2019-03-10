@@ -5,21 +5,21 @@ import java.io.Serializable;
 import akka.actor.ActorRef;
 
 public class Event implements Serializable {
-	
+
 	enum Action {
 		DO,
 		DONT
 	}
-	
+
 	private int id;
 	private ActorRef source;
 	private long timestamp;
 	private int  ttl;
 	private final Action action;
-	
+
 	/**
 	 * Initialise a new event with ttl set to 0.
-	 * 
+	 *
 	 * @param source
 	 * @param timestamp
 	 */
@@ -39,7 +39,7 @@ public class Event implements Serializable {
 	public ActorRef getSource() {
 		return source;
 	}
-	
+
 	public int getId() {
 		return id;
 	}
@@ -63,12 +63,13 @@ public class Event implements Serializable {
 	public void setTimestamp(long timestamp) {
 		this.timestamp = timestamp;
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Event [timestamp=" + timestamp +
 				", source=" + source.path().name() +
 				", id=" + id +
-				", action=" + action + "]";
+				", action=" + action +
+				", ttl=" + ttl + "]";
 	}
 }
