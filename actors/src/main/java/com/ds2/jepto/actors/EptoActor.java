@@ -224,11 +224,13 @@ public class EptoActor extends CyclonActor {
 			}
 		}
 		for (Event event : deliverable.toList()) {
-			if (event.getTimestamp() > minTs) {
+			// TODO:HERE: changed from > to >= wrt the original paper
+			if (event.getTimestamp() >= minTs) {
 				deliverable.remove(event);
 			} else {
 				received.remove(event);
 			}
+			// END:TODO:HERE:
 		}
 		for (Event event : deliverable.toSortedList()) {
 			this.delivered.add(new EventKey(event));
