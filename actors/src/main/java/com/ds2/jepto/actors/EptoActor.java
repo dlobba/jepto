@@ -25,18 +25,18 @@ import scala.concurrent.duration.Duration;
 public class EptoActor extends CyclonActor {
 
 	private static final Logger LOGGER = Logger.getLogger(EptoActor.class.getName());
-	
+
 	public static class RoundMsg implements Serializable {};
 	public static class GenEventMsg implements Serializable {};
-	
+
 	public final long MAX_TTL;
 	public final int  NUM_RECEIVERS; // it's the K in the paper
-	
+
 	private final long SEED;
 	// private int  id; USE THE ACTOR REF REFERENCE!
 	private long roundInterval;
 	private long genEventInterval;
-	
+
 	private AtomicLong     clock; // logical clock
 	private AtomicInteger  nextEventId;
 
@@ -44,7 +44,7 @@ public class EptoActor extends CyclonActor {
 	private EventMap received;       // events received but not yet delivered
 	private Set<EventKey> delivered; // delivered events
 	private long lastDeliveredTs;    // maximum ts of delivered events
-	
+
 	public EptoActor(
 			long max_ttl,
 			int numReceivers,
@@ -68,7 +68,7 @@ public class EptoActor extends CyclonActor {
 		sendRoundMsg(); // start first round
 		sendGenEventMsg();
 	}
-	
+
 	public static Props props(
 			long max_ttl,
 			int numReceivers,
@@ -91,14 +91,14 @@ public class EptoActor extends CyclonActor {
 	public Map<ActorRef, Long> getView() {
 		return this.getCache();
 	}
-	
+
 /*---------------------------------------------------------------------------*/
 /*                            LOGICAL CLOCK HANDLING                         */
 /*---------------------------------------------------------------------------*/
 	/**
 	 * Return true if the event has a ttl greater
 	 * than MAX_TTL.
-	 * 
+	 *
 	 * @param event
 	 * @return
 	 */
@@ -121,7 +121,7 @@ public class EptoActor extends CyclonActor {
 /*---------------------------------------------------------------------------*/
 	/**
 	 * Insert an event into the next ball of the current process.
-	 * 
+	 *
 	 * @param event
 	 */
 	private void eptoBroadcast(Event event) {
@@ -152,7 +152,7 @@ public class EptoActor extends CyclonActor {
 			Event tmp;
 			for (Event event : events) {
 				if (event.getTtl() < this.MAX_TTL) {
-					tmp = this.nextBall.get(event); 
+					tmp = this.nextBall.get(event);
 					if (tmp != null) {
 						if (tmp.getTtl() < event.getTtl()) {
 							this.nextBall.update(event);
@@ -170,12 +170,6 @@ public class EptoActor extends CyclonActor {
 		Ball ball;
 		String arrayString = "";
 		synchronized (this.nextBall) {
-			if (this.nextBall.isEmpty()) {
-				// if nothing to send, just schedule
-				// new round message and exit
-				sendRoundMsg();
-				return;
-			}
 			this.nextBall.incrementTtl();
 			ball = this.nextBall.clone();
 			this.nextBall.clear();
@@ -201,7 +195,7 @@ public class EptoActor extends CyclonActor {
 	}
 /*---------------------------------------------------------------------------*/
 /*                         EpTO: ORDERING COMPONENT                          */
-/*---------------------------------------------------------------------------*/	
+/*---------------------------------------------------------------------------*/
 	public void orderEvents(Ball ball) {
 		// received and delivered are used only within this
 		// method. Hence no concurrent access should be
@@ -241,7 +235,7 @@ public class EptoActor extends CyclonActor {
 			this.lastDeliveredTs = event.getTimestamp();
 			this.deliver(event);
 		}
-		
+
 	}
 /*---------------------------------------------------------------------------*/
 
@@ -261,7 +255,7 @@ public class EptoActor extends CyclonActor {
 						this.getSelf().path().name(),
 						event.toString()});
 	}
-	
+
 	private void onGenEventMsg(GenEventMsg msg) {
 		Event newEvent = new Event(
 				nextEventId.getAndIncrement(),
@@ -275,7 +269,7 @@ public class EptoActor extends CyclonActor {
 //						newEvent.toString()});
 		sendGenEventMsg();
 	}
-	
+
 /*---------------------------------------------------------------------------*/
 
 	private void sendRoundMsg() {
@@ -289,7 +283,7 @@ public class EptoActor extends CyclonActor {
 				getContext().system().dispatcher(),
 				this.getSelf());
 	}
-	
+
 	private void sendGenEventMsg() {
 		this.getContext()
 		.getSystem()
