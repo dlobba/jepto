@@ -22,7 +22,8 @@ def parse_event(event_repr):
                               "\[timestamp=(\d+),\s*"\
                               "source=(\w+),\s*"\
                               "id=(\d+),\s*"
-                              "action=\w+\]\s*")
+                              "action=\w+,\s*"
+                              "ttl=\d+\s*\]\s*")
     match = event_regexp.match(event_repr)
     if not match:
         raise ParseEventException()
