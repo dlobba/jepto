@@ -202,8 +202,9 @@ public class EptoActor extends CyclonActor {
 		// of concern (hopefully)
 		received.incrementTtl();
 		for (Event event : ball.toList()) {
+			// TODO:HERE: changed from >= to > wrt the original paper
 			if (!this.delivered.contains(new EventKey(event)) &&
-					event.getTimestamp() >= this.lastDeliveredTs) {
+					event.getTimestamp() > this.lastDeliveredTs) {
 				if (this.received.contains(event)) {
 					if (this.received.get(event).getTtl() < event.getTtl()) {
 						this.received.update(event);
@@ -212,6 +213,7 @@ public class EptoActor extends CyclonActor {
 					this.received.insert(event);
 				}
 			}
+			// END:TODO
 		}
 
 		long minTs = Long.MAX_VALUE;
