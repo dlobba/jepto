@@ -66,11 +66,8 @@ def parse_logs(log_file):
                 delivery_order[actor].append(message)
     return broadcast, delivered, delivery_order
                 
-
-if __name__ == "__main__":
-    b, d, delivery_order = parse_logs(sys.argv[1])
-
-    for actor1, order1 in delivery_order.items():
+def check_actors_total_order(delivery_order_map):
+    for actor1, order1 in delivery_order_map.items():
         for actor2, order2 in delivery_order.items():
             torder_satisfied, relation =  to.total_order(order1, order2)
             if not torder_satisfied:
@@ -83,3 +80,14 @@ if __name__ == "__main__":
                                       " have different delivery order: "\
                                       "{} has {}->{}"
                                       .format(actor1, actor2, actor, el1, el2))
+
+def print_agreement(delivered_msg_map, num_actors):
+    for msg, actors in delivered_msg_map.items():
+        print(msg + " delivery perc: {}%".format(round(len(actors)/num_actors * 100, 2)))
+
+
+if __name__ == "__main__":
+    b, msg_delivery, delivery_order = parse_logs(sys.argv[1])
+    num_actors = 100
+    print_agreement(msg_delivery, num_actors)
+
