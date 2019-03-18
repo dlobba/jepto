@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -20,14 +21,14 @@ public class EptoMain {
 	private static FileHandler loggerFileHandler;
 
 	private static final String SYSTEM_NAME = "epto";
-	private static long  SEED = 42;
+	private static AtomicLong  SEED = new AtomicLong(42);
 
-	private static int  viewSize      = 10;
-	private static int  shuffleLength = 3;
-	private static int 	numReceivers  = 3;
-	private static long max_ttl       = 5;
+	private static int  viewSize      = 100;
+	private static int  shuffleLength = 100;
+	private static int 	numReceivers  = 20;
+	private static long max_ttl       = 2 * 14 + 1;
 	private static long roundInterval = 5000l;
-	private static long shufflePeriod = 3000l;
+	private static long shufflePeriod = 100l;
 
 	private static void createExecutionLogFile() {
 		try {
@@ -64,7 +65,7 @@ public class EptoMain {
 				viewSize,
 				shuffleLength,
 				shufflePeriod,
-				SEED),
+				SEED.getAndIncrement()),
 				name);
 	}
 
@@ -89,12 +90,13 @@ public class EptoMain {
 			peers.add(createActor(system, "actor_" + i));
 		}
 
+		//peers.get(23).tell(new DebugMsg(DebugType.TRACE_CACHE), null);
 		// create a star topology centered at the
 		// first element of the list
 		try {
 			for(ActorRef peer : peers) {
 				peer.tell(new JoinMsg(tracker), null);
-				Thread.sleep(100l);
+				Thread.sleep(0l);
 			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
