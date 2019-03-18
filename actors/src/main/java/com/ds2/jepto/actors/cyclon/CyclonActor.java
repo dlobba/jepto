@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
@@ -19,7 +21,9 @@ import akka.japi.pf.ReceiveBuilder;
 import scala.concurrent.duration.Duration;
 
 public class CyclonActor extends AbstractActor {
-	
+
+	private static final Logger LOGGER = Logger.getLogger(CyclonActor.class.getName());
+
 	public static class AgingMsg implements Serializable {};
 	private static class ShufflingMsg implements Serializable {};
 
@@ -27,23 +31,23 @@ public class CyclonActor extends AbstractActor {
 	private long shufflePeriod;
 	private int  cacheSize;
 	private int msgId;
-	
+
 	private boolean debugCache;
-	
+
 	private CyclonShufflingMsg buffer;
-	
-	
+
+
 	// describes the number of nodes selected,
 	// from the cache, in the shuffling process
 	private int shuffleLength;
-	
+
 	/*
 	 * BEWARE:
 	 * Check, in case of problems, the hashing
 	 * function on ActorRef
 	 */
 	private Map<ActorRef, Long> cache;
-	
+
 	public CyclonActor(int cacheSize, int shuffleLength, long shufflePeriod, long seed) {
 		super();
 		this.cacheSize = cacheSize;
@@ -84,15 +88,15 @@ public class CyclonActor extends AbstractActor {
 		sendShufflingMsg();
 	}
 	/**
-	 * 
+	 *
 	 * Given entries coming from Q, remove reference
 	 * to P and try to accomodate every received entry.
 	 * If space doesn't allow so, replace new entry with
 	 * the one previously sent.
-	 * 
+	 *
 	 * If those entries are no more in the cache, block
 	 * the merge process and return.
-	 * 
+	 *
 	 * @param other
 	 * @param shuffledElements
 	 */
@@ -128,11 +132,11 @@ public class CyclonActor extends AbstractActor {
 		}
 		if (debugCache) {
 			String dbg = this.self().path().name() + "\n" + printCache();
-			System.out.println(dbg);
+			LOGGER.log(Level.INFO, dbg);
 		}
-			
+
 	}
-	
+
 	private ActorRef selectNeighbour() {
 		long max = -1l;
 		ActorRef old = null;
@@ -144,7 +148,7 @@ public class CyclonActor extends AbstractActor {
 		}
 		return old;
 	}
-	
+
 	/*
 	 * copyCache is changed!
 	 */
@@ -165,9 +169,9 @@ public class CyclonActor extends AbstractActor {
 			}
 		}
 	}
-	
+
 	// periodic operations ----------------------
-	
+
 
 	private void onShufflingMsg(ShufflingMsg msg) {
 		if (this.buffer != null) {
@@ -191,7 +195,7 @@ public class CyclonActor extends AbstractActor {
 		}
 		sendShufflingMsg();
 	}
-	
+
 	private void onRequestMsg(RequestMsg msg) {
 		Map<ActorRef, Long> copyCache = new HashMap<>(this.cache);
 		copyCache = selectOthersFrom(this.shuffleLength, copyCache);
@@ -199,7 +203,7 @@ public class CyclonActor extends AbstractActor {
 		this.getSender().tell(reply, this.getSelf());
 		merge(msg.getUpdatingCache(), reply.getUpdatingCache().keySet());
 	}
-	
+
 	private void onReplyMsg(ReplyMsg msg) {
 		synchronized (cache) {
 			if (msg.getId() == this.msgId - 1) {
@@ -210,7 +214,7 @@ public class CyclonActor extends AbstractActor {
 			}
 		}
 	}
-	
+
 	private void sendShufflingMsg() {
 		this.getContext()
 		.getSystem()
@@ -222,9 +226,9 @@ public class CyclonActor extends AbstractActor {
 				getContext().system().dispatcher(),
 				this.getSelf());
 	}
-	
+
 	// debug ------------------------------------
-	
+
 	private String printCache() {
 		StringBuilder str = new StringBuilder();
 		str.append("id,age\n");
@@ -233,7 +237,7 @@ public class CyclonActor extends AbstractActor {
 		}
 		return str.toString();
 	}
-	
+
 	private void onDebugMsg(DebugMsg msg) {
 		switch (msg.getType()) {
 		case TRACE_CACHE:
@@ -244,7 +248,7 @@ public class CyclonActor extends AbstractActor {
 			break;
 		default:
 			String dbg = this.self().path().name() + "\n" + printCache();
-			System.out.println(dbg);
+			LOGGER.log(Level.INFO, dbg);
 			break;
 		}
 	}
