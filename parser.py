@@ -2,7 +2,7 @@
 import re
 import sys
 
-import total_order as to
+import total_order2 as to
 
 class ParseEventException(Exception):
     def __init__(self, message=None):
