@@ -86,6 +86,10 @@
 									<key>actors.num.default</key>
 									<value>10</value>
 								</systemProperty>
+								<systemProperty>
+									<key>as.paper.default</key>
+									<value>false</value>
+								</systemProperty>
 							</systemProperties>
 						</configuration>
 					</execution>

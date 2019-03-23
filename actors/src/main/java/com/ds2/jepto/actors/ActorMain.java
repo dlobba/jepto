@@ -59,6 +59,8 @@ public class ActorMain {
 	private static long roundInterval = 5000l;
 	private static long shufflePeriod = 3000l;
 
+	private static boolean asPaper    = false;
+
 	private static void createActorLogFile(String actorName) {
 		try {
 			// create a specific log for the actor
@@ -145,7 +147,8 @@ public class ActorMain {
 	        		viewSize,
 	        		shuffleLength,
 	        		shufflePeriod,
-	        		SEED),
+	        		SEED,
+	        		asPaper),
 	        		participantId);
 			createActorLogFile(participantId);
 			LOGGER.log(Level.INFO, "Tracker {0} started.",
@@ -170,7 +173,8 @@ public class ActorMain {
 	        		viewSize,
 	        		shuffleLength,
 	        		shufflePeriod,
-	        		SEED),
+	        		SEED,
+	        		asPaper),
 	        		participantId);
 
 			// Let the node send a join request
