@@ -46,6 +46,8 @@ public class EptoActor extends CyclonActor {
 	private Set<EventKey> delivered; // delivered events
 	private long lastDeliveredTs;    // maximum ts of delivered events
 
+	private boolean asPaper;
+
 	public EptoActor(
 			long max_ttl,
 			int numReceivers,
@@ -53,7 +55,8 @@ public class EptoActor extends CyclonActor {
 			int viewSize,
 			int shuffleLength,
 			long shufflePeriod,
-			long seed) {
+			long seed,
+			boolean asPaper) {
 		super(viewSize, shuffleLength, shufflePeriod, seed);
 		this.roundInterval    = roundInterval;
 		this.genEventInterval = roundInterval;
@@ -66,6 +69,7 @@ public class EptoActor extends CyclonActor {
 		this.received = new EventMap();
 		this.delivered = new HashSet<>();
 		this.lastDeliveredTs = 0l;
+		this.asPaper = asPaper;
 	}
 
 	public static Props props(
@@ -75,7 +79,8 @@ public class EptoActor extends CyclonActor {
 			int viewSize,
 			int shuffleLength,
 			long shufflePeriod,
-			long seed)
+			long seed,
+			boolean asPaper)
 	{
 		return Props.create(EptoActor.class,
 				() -> new EptoActor(max_ttl,
@@ -84,7 +89,8 @@ public class EptoActor extends CyclonActor {
 						viewSize,
 						shuffleLength,
 						shufflePeriod,
-						seed));
+						seed,
+						asPaper));
 	}
 
 	public Map<ActorRef, Long> getView() {
@@ -189,7 +195,11 @@ public class EptoActor extends CyclonActor {
 				new Object[] {
 						this.getSelf().path().name(),
 						arrayString});
-		this.orderEvents(ball);
+		if (this.asPaper) {
+			this.paperOrderEvents(ball);
+		} else {
+			this.orderEvents(ball);
+		}
 		sendRoundMsg();
 	}
 /*---------------------------------------------------------------------------*/
@@ -240,6 +250,56 @@ public class EptoActor extends CyclonActor {
 		}
 
 	}
+
+
+	/**
+	 * Implement orderEvents as described in the paper.
+	 *
+	 * @return
+	 */
+	public void paperOrderEvents(Ball ball) {
+		// received and delivered are used only within this
+		// method. Hence no concurrent access should be
+		// of concern (hopefully)
+		received.incrementTtl();
+		for (Event event : ball.toList()) {
+			if (!this.delivered.contains(new EventKey(event)) &&
+					event.getTimestamp() >= this.lastDeliveredTs) {
+				if (this.received.contains(event)) {
+					if (this.received.get(event).getTtl() < event.getTtl()) {
+						this.received.update(event);
+					}
+				} else {
+					this.received.insert(event);
+				}
+			}
+		}
+		long minTs = Long.MAX_VALUE;
+		EventMap deliverable = new EventMap();
+		for (Event event : this.received.toList()) {
+			if (isDeliverable(event)) {
+				deliverable.insert(event);
+			} else if (minTs > event.getTimestamp()) {
+				minTs = event.getTimestamp();
+			}
+		}
+		for (Event event : deliverable.toList()) {
+			if (event.getTimestamp() > minTs) {
+				deliverable.remove(event);
+			} else {
+				received.remove(event);
+			}
+		}
+		for (Event event : deliverable.toSortedList()) {
+			this.delivered.add(new EventKey(event));
+			this.lastDeliveredTs = event.getTimestamp();
+			this.deliver(event);
+		}
+
+	}
+
+
+
 /*---------------------------------------------------------------------------*/
 
 	private List<ActorRef> getPeers() {
