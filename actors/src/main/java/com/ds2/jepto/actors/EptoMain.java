@@ -96,9 +96,14 @@ public class EptoMain {
 		try {
 			for(ActorRef peer : peers) {
 				peer.tell(new JoinMsg(tracker), null);
-				Thread.sleep(0l);
+			}
+			Thread.sleep(5000l);
+			tracker	.tell(new EptoActor.EptoStartMsg(), null);
+			for(ActorRef peer : peers) {
+				peer.tell(new EptoActor.EptoStartMsg(), null);
 			}
 		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
