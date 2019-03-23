@@ -30,6 +30,8 @@ public class EptoMain {
 	private static long roundInterval = 5000l;
 	private static long shufflePeriod = 100l;
 
+	private static boolean asPaper = false;
+
 	private static void createExecutionLogFile() {
 		try {
 			// create a specific log for the actor
@@ -65,7 +67,8 @@ public class EptoMain {
 				viewSize,
 				shuffleLength,
 				shufflePeriod,
-				SEED.getAndIncrement()),
+				SEED.getAndIncrement(),
+				asPaper),
 				name);
 	}
 
@@ -117,6 +120,12 @@ public class EptoMain {
 		if (numActorStr == null && defaultNumActorStr == null) {
 			throw new ActorMain.EptoInputException("No actors number defined");
 		}
+		String asPaperStr = System.getProperty("as.paper");
+		String asPaperDefault = System.getProperty("as.paper.default");
+		if (asPaperStr != null) {
+			asPaper = Boolean.parseBoolean(asPaperStr);
+		}
+
 		long numActors;
 		if (numActorStr != null) {
 			numActors = Long.parseUnsignedLong(numActorStr);
