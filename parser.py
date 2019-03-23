@@ -30,7 +30,7 @@ def parse_event(event_repr):
     return match.groups()
 
 def parse_logs(log_file):
-    actor_regexp = re.compile("INFO:\s+EpTO:\s+(actor_\d+)\s+(\w+)\s+(.*)")
+    actor_regexp = re.compile("INFO:\s+EpTO:\s+(\w+)\s+(\w+)\s+(.*)")
     # the set of actor+message_id
     # for messages broadcast
     broadcast = set()
