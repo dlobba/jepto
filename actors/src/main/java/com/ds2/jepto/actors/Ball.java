@@ -4,10 +4,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * Deprecated in favour of EventMap.
+ * {@link Deprecated}
+ */
 public class Ball {
-	
+
 	List<Event> events;
-	
+
 	public Ball() {
 		this.events = new ArrayList<>();
 	}
@@ -17,11 +21,11 @@ public class Ball {
 		newBall.events = new ArrayList<>(this.events);
 		return newBall;
 	}
-	
+
 	public void insert(Event event) {
 		this.events.add(event);
 	}
-	
+
 	public Event get(Event fevent) {
 		for (Event event : events) {
 			if (fevent.getId() == event.getId() &&
@@ -30,7 +34,7 @@ public class Ball {
 		}
 		return null;
 	}
-	
+
 	public void update(Event fevent) {
 		Event tmp;
 		Iterator<Event> eventIterator = this.events.iterator();
@@ -44,26 +48,26 @@ public class Ball {
 		}
 		this.insert(fevent);
 	}
-	
+
 	public void incrementTtl() {
 		for (Event event : events) {
 			event.setTtl(event.getTtl() + 1);
 		}
 	}
-	
+
 	public List<Event> toList() {
 		return this.events;
 	}
-	
+
 	public void fromList(List<Event> eventList) {
 		this.events = new ArrayList<>(eventList);
 	}
-	
-	
+
+
 	public boolean isEmpty() {
 		return this.events.isEmpty();
 	}
-	
+
 	public void clear() {
 		this.events.clear();
 	}

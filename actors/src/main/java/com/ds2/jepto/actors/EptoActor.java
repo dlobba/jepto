@@ -41,7 +41,7 @@ public class EptoActor extends CyclonActor {
 	private AtomicLong     clock; // logical clock
 	private AtomicInteger  nextEventId;
 
-	private Ball nextBall;
+	private EventMap nextBall;
 	private EventMap received;       // events received but not yet delivered
 	private Set<EventKey> delivered; // delivered events
 	private long lastDeliveredTs;    // maximum ts of delivered events
@@ -62,7 +62,7 @@ public class EptoActor extends CyclonActor {
 		this.genEventInterval = roundInterval;
 		this.clock = new AtomicLong(0);
 		this.nextEventId = new AtomicInteger(0);
-		this.nextBall = new Ball();
+		this.nextBall = new EventMap();
 		this.NUM_RECEIVERS = numReceivers;
 		this.MAX_TTL = max_ttl;
 		this.SEED = seed;
@@ -172,7 +172,7 @@ public class EptoActor extends CyclonActor {
 	}
 
 	private void onRoundMsg(RoundMsg msg) {
-		Ball ball;
+		EventMap ball;
 		String arrayString = "";
 		synchronized (this.nextBall) {
 			this.nextBall.incrementTtl();
@@ -205,7 +205,7 @@ public class EptoActor extends CyclonActor {
 /*---------------------------------------------------------------------------*/
 /*                         EpTO: ORDERING COMPONENT                          */
 /*---------------------------------------------------------------------------*/
-	public void orderEvents(Ball ball) {
+	public void orderEvents(EventMap ball) {
 		// received and delivered are used only within this
 		// method. Hence no concurrent access should be
 		// of concern (hopefully)
@@ -257,7 +257,7 @@ public class EptoActor extends CyclonActor {
 	 *
 	 * @return
 	 */
-	public void paperOrderEvents(Ball ball) {
+	public void paperOrderEvents(EventMap ball) {
 		// received and delivered are used only within this
 		// method. Hence no concurrent access should be
 		// of concern (hopefully)

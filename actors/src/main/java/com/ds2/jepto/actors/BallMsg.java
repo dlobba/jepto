@@ -5,10 +5,10 @@ import java.util.Collections;
 import java.util.List;
 
 public class BallMsg implements Serializable {
-	
+
 	private List<Event> ball;
 
-	public BallMsg(Ball ball) {
+	public BallMsg(EventMap ball) {
 		super();
 		this.ball = Collections.unmodifiableList(ball.toList());
 	}
@@ -16,7 +16,7 @@ public class BallMsg implements Serializable {
 	public List<Event> getBall() {
 		return ball;
 	}
-	
-	
+
+
 
 }
