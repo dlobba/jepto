@@ -28,6 +28,7 @@ public class EptoActor extends CyclonActor {
 
 	public static class RoundMsg implements Serializable {};
 	public static class GenEventMsg implements Serializable {};
+	public static class EptoStartMsg implements Serializable {};
 
 	public final long MAX_TTL;
 	public final int  NUM_RECEIVERS; // it's the K in the paper
@@ -65,8 +66,6 @@ public class EptoActor extends CyclonActor {
 		this.received = new EventMap();
 		this.delivered = new HashSet<>();
 		this.lastDeliveredTs = 0l;
-		sendRoundMsg(); // start first round
-		sendGenEventMsg();
 	}
 
 	public static Props props(
@@ -274,6 +273,11 @@ public class EptoActor extends CyclonActor {
 		sendGenEventMsg();
 	}
 
+	private void onEptoStartMsg(EptoStartMsg msg) {
+		sendRoundMsg(); // start first round
+		sendGenEventMsg();
+	}
+
 /*---------------------------------------------------------------------------*/
 
 	private void sendRoundMsg() {
@@ -307,6 +311,7 @@ public class EptoActor extends CyclonActor {
 				.match(BallMsg.class, this::onBallMsg)
 				.match(RoundMsg.class, this::onRoundMsg)
 				.match(GenEventMsg.class, this::onGenEventMsg)
+				.match(EptoStartMsg.class, this::onEptoStartMsg)
 				.build();
 	}
 }
