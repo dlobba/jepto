@@ -109,6 +109,15 @@ public class ActorMain {
 		String defaultActorConfigFile = System.getProperty("config.resource.default");
 		String inputActorId           = System.getProperty("peer");
 		String inputPortNumber        = System.getProperty("port");
+		String seed                   = System.getProperty("seed");
+
+		String asPaperStr = System.getProperty("as.paper");
+		String asPaperDefault = System.getProperty("as.paper.default");
+		if (asPaperStr != null) {
+			asPaper = Boolean.parseBoolean(asPaperStr);
+			if (asPaper)
+				LOGGER.log(Level.INFO, "Starting simulation as described in the paper.");
+		}
 
 		if (actorConfigFile == null && defaultActorConfigFile == null) {
 			throw new EptoInputException("No akka config resource defined");
@@ -130,6 +139,10 @@ public class ActorMain {
 					.fromAnyRef(Integer.parseUnsignedInt(inputPortNumber)));
 			actorConfig = actorConfig.withValue("participant.id",
 					ConfigValueFactory.fromAnyRef(inputActorId));
+			if (seed != null) {
+				SEED = Integer.parseInt(seed);
+			}
+			System.out.println("Seed: " + SEED);
 		}
 
 		ActorSystem system;
