@@ -68,7 +68,7 @@ public class EptoActor extends CyclonActor {
 		this.SEED = seed;
 		this.received = new EventMap();
 		this.delivered = new HashSet<>();
-		this.lastDeliveredTs = 0l;
+		this.lastDeliveredTs = -1l;
 		this.asPaper = asPaper;
 	}
 
@@ -137,21 +137,22 @@ public class EptoActor extends CyclonActor {
 			this.nextBall.insert(event);
 		}
 		LOGGER.log(Level.INFO,
-				"EpTO: {0} broadcast {1}",
+				"EpTO: {0} at_{2}_{3} broadcast {1}",
 				new Object[] {
 						this.getSelf().path().name(),
-						event.toString()});
+						event.toString(),
+						Long.toString(System.currentTimeMillis()),
+						this.clock.get()});
 	}
 
 	private void onBallMsg(BallMsg msg) {
 		LOGGER.log(Level.INFO,
-				"EpTO: {0} received_ball_from {1}",
+				"EpTO: {0} at_{2}_{3} received_ball_from {1}",
 				new Object[] {
 						this.getSelf().path().name(),
-						this.getSender().path().name()});
-//		System.out.printf("Actor %s received a ball from %s\n",
-//				this.getSelf().path().name(),
-//				this.getSender().path().name());
+						this.getSender().path().name(),
+						Long.toString(System.currentTimeMillis()),
+						this.clock.get()});
 		synchronized (this.nextBall) {
 			List<Event> events = msg.getBall();
 			Event tmp;
@@ -191,10 +192,12 @@ public class EptoActor extends CyclonActor {
 					.collect(Collectors.toList()));
 		}
 		LOGGER.log(Level.INFO,
-				"EpTO: {0} sent_ball_to {1}",
+				"EpTO: {0} at_{2}_{3} sent_ball_to {1}",
 				new Object[] {
 						this.getSelf().path().name(),
-						arrayString});
+						arrayString,
+						Long.toString(System.currentTimeMillis()),
+						this.clock.get()});
 		if (this.asPaper) {
 			this.paperOrderEvents(ball);
 		} else {
@@ -313,10 +316,12 @@ public class EptoActor extends CyclonActor {
 
 	private void deliver(Event event) {
 		LOGGER.log(Level.INFO,
-				"EpTO: {0} delivered {1}",
+				"EpTO: {0} at_{2}_{3} delivered {1}",
 				new Object[] {
 						this.getSelf().path().name(),
-						event.toString()});
+						event.toString(),
+						Long.toString(System.currentTimeMillis()),
+						this.clock.get()});
 	}
 
 	private void onGenEventMsg(GenEventMsg msg) {

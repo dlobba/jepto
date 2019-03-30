@@ -28,7 +28,7 @@ public class Event implements Serializable {
 		this.id = id;
 		this.action = action;
 		this.source = null;
-		this.timestamp = 0;
+		this.timestamp = 0l;
 		this.ttl = 0;
 	}
 
