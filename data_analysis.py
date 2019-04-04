@@ -73,12 +73,17 @@ def sum_delivery_fraction(delay_dict):
         count_msg += 1
     return {k:v/count_msg for k,v in tot_delay.items()}
 
-def filter_msg(data, max_msg=None):
-    if max_msg is None:
+def filter_msg(data, min_msg=None, max_msg=None):
+    if max_msg is None and min_msg is None:
         return data
+    if min_msg is None:
+        min_msg = 0
+
     temp = data.copy()
     for msg, v in data.items():
-        if int(msg.split(":")[-1]) > max_msg:
+        msg_i = int(msg.split(":")[-1])
+        if msg_i < min_msg or\
+           (max_msg is not None and msg_i > max_msg):
             temp.pop(msg)
     return temp
 
