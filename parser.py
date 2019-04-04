@@ -3,6 +3,7 @@ import re
 import sys
 
 import total_order2 as to
+import data_analysis as da
 
 class ParseEventException(Exception):
     def __init__(self, message=None):
@@ -29,8 +30,13 @@ def parse_event(event_repr):
         raise ParseEventException()
     return match.groups()
 
-def parse_logs(log_file):
-    actor_regexp = re.compile("INFO:\s+EpTO:\s+(\w+)\s+(\w+)\s+(.*)")
+def parse_logs(log_file, msg_filter_func=lambda x: x is not None):
+    """
+    Given a log file perform the parsing collecting data for further
+    processing. If a filter function is given it is applied to
+    message ids in order to filter them.
+    """
+    actor_regexp = re.compile("INFO:\s+EpTO:\s+(\w+)\s+at_(\d+)_(\d+)\s+(\w+)\s+(.*)")
     # the set of actor+message_id
     # for messages broadcast
     broadcast = set()
@@ -40,31 +46,42 @@ def parse_logs(log_file):
     delivered = dict()
     # for each actor, list messages ordered by delivery
     delivery_order = dict()
+
+    # dictionary containing
+    delta_msg = {}
     with open(log_file, "r") as fh:
         for line in fh:
             match = actor_regexp.match(line)
             if not match:
                 continue
-            actor, action, argument = match.groups()
+            actor, ts, lclock, action, argument = match.groups()
+            time = lclock
             if actor not in delivery_order:
                 delivery_order[actor] = []
 
-            if "broadcast" in action:
+            if "broadcast" in action or "delivered" in action:
                 ts, source, msg_id = parse_event(argument)
                 message = "{}:{}".format(source,msg_id)
-                broadcast.add(message)
-                delivered[message] = []
-            elif "delivered" in action:
-                ts, source, msg_id = parse_event(argument)
-                message = "{}:{}".format(source,msg_id)
-                if message not in delivered:
-                    delivered[message] = [actor]
-                else:
-                    delivered[message].append(actor)
-                # add message to the delivery list for
-                # the current actor
-                delivery_order[actor].append(message)
-    return broadcast, delivered, delivery_order
+
+                # perform the message filtering
+                if msg_filter_func(message):
+                    continue
+
+                if "broadcast" in action:
+                    broadcast.add(message)
+                    delivered[message] = []
+                    delta_msg[message] = {"at" : time, "actors" : []}
+                elif "delivered" in action:
+                    deliveryat = time
+                    if message not in delivered:
+                        delivered[message] = [actor]
+                    else:
+                        delivered[message].append(actor)
+                        # add message to the delivery list for
+                        # the current actor
+                        delivery_order[actor].append(message)
+                        delta_msg[message]["actors"].append(deliveryat)
+    return broadcast, delivered, delivery_order, delta_msg
                 
 def check_actors_total_order(delivery_order_map):
     for actor1, order1 in delivery_order_map.items():
@@ -87,7 +104,12 @@ def print_agreement(delivered_msg_map, num_actors):
 
 
 if __name__ == "__main__":
-    b, msg_delivery, delivery_order = parse_logs(sys.argv[1])
+    filter_func = lambda x: da.filter_msg(x, 10, 100)
+    b, msg_delivery, delivery_order, delta_msg = parse_logs(sys.argv[1], filter_func)
     num_actors = 100
     print_agreement(msg_delivery, num_actors)
-
+    #delta_msg = da.filter_msg(delta_msg, 10, 100)
+    delays1 = da.compute_delivery_delay(delta_msg)
+    delays2 = list(da.delay_count(delays1, num_actors))
+    delays3 = da.sum_delivery_fraction(delays2)
+    da.plot_count(delays3)

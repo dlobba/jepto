@@ -87,6 +87,31 @@ def filter_msg(data, min_msg=None, max_msg=None):
             temp.pop(msg)
     return temp
 
+def filter_msg(msg, min_msg=None, max_msg=None):
+    """
+    Return False if, given a message id `msg_i`, it is true:
+    
+    min_msg <= msg_i <= max_msg
+
+    Note
+    ----
+    The message `msg` is given in the form `actor:msg_id`.
+    """
+    msg_i = int(msg.split(":")[-1])
+    if min_msg is not None and msg_i < min_msg:
+        return True
+    if max_msg is not None and msg_i > max_msg:
+        return True
+    return False
+    
+
+def summary():
+    """
+    Given a dictionary containing the fraction
+    of delivery measure
+    """
+    pass
+
 
 def plot_count(delay_count):
     x = list(delay_count.keys())
