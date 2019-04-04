@@ -96,6 +96,7 @@ def filter_msg(msg, min_msg=None, max_msg=None):
     Note
     ----
     The message `msg` is given in the form `actor:msg_id`.
+    @deprecated
     """
     msg_i = int(msg.split(":")[-1])
     if min_msg is not None and msg_i < min_msg:
@@ -103,23 +104,37 @@ def filter_msg(msg, min_msg=None, max_msg=None):
     if max_msg is not None and msg_i > max_msg:
         return True
     return False
-    
 
-def summary():
+def compute_actor_msg(msg_list):
     """
-    Given a dictionary containing the fraction
-    of delivery measure
+    Given a list of messages, cluster
+    each message with the corresponding sender.
     """
-    pass
+    actor_msg = {}
+    for msg in msg_list:
+        actor, mid = msg.split(":")
+        mid = int(mid)
+        if actor in actor_msg:
+            actor_msg[actor].append(mid)
+        else:
+            actor_msg[actor] = [mid]
+    return actor_msg
 
+def compute_delivery_rate(delivered_msg_map, num_actors):
+    return {msg : round(len(actors)/num_actors * 100, 2)\
+            for msg, actors in delivered_msg_map.items()}
+
+def compute_epoch(actor_msg):
+    """
+    Compute the lowest and highest message ids.
+    """
+    messages = reduce(lambda x,y: set(x).union(set(y)), actor_msg.values())
+    return min(messages), max(messages)       
 
 def plot_count(delay_count):
     x = list(delay_count.keys())
     x.sort()
     y = [delay_count[k] for k in x]
-    # s = sum(ytemp)
-    #y = [v/s for v in ytemp]
-    # compute the cdf
     y = [sum(y[0:i]) for i in range(0, len(y))]
     plt.step(x, y)
     plt.show()
