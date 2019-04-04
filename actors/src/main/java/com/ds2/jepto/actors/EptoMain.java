@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.FileHandler;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
@@ -24,9 +25,9 @@ public class EptoMain {
 	private static AtomicLong  SEED = new AtomicLong(42);
 
 	private static int  viewSize      = 100;
-	private static int  shuffleLength = 100;
-	private static int 	numReceivers  = 20;
-	private static long max_ttl       = 2 * 14 + 1;
+	private static int  shuffleLength = 30;
+	private static int 	numReceivers  = 17;
+	private static long max_ttl       = 3 * 14 + 1;
 	private static long roundInterval = 5000l;
 	private static long shufflePeriod = 100l;
 
@@ -124,6 +125,8 @@ public class EptoMain {
 		String asPaperDefault = System.getProperty("as.paper.default");
 		if (asPaperStr != null) {
 			asPaper = Boolean.parseBoolean(asPaperStr);
+			if (asPaper)
+				LOGGER.log(Level.INFO, "Starting simulation as described in the paper.");
 		}
 
 		long numActors;
