@@ -147,12 +147,13 @@ public class EptoActor extends CyclonActor {
 
 	private void onBallMsg(BallMsg msg) {
 		LOGGER.log(Level.INFO,
-				"EpTO: {0} at_{2}_{3} received_ball_from {1}",
+				"EpTO: {0} at_{2}_{3} received_ball_from {1} {4}",
 				new Object[] {
 						this.getSelf().path().name(),
 						this.getSender().path().name(),
 						Long.toString(System.currentTimeMillis()),
-						this.clock.get()});
+						this.clock.get(),
+						msg.toString()});
 		synchronized (this.nextBall) {
 			List<Event> events = msg.getBall();
 			Event tmp;
@@ -183,21 +184,21 @@ public class EptoActor extends CyclonActor {
 		if (!ball.isEmpty()) {
 			List<ActorRef> peers = getPeers();
 			BallMsg ballMsg = new BallMsg(ball);
-			for (ActorRef peer : peers) {
-				peer.tell(ballMsg, this.getSelf());
-			}
 			arrayString = String.join(", ",
 					peers.stream()
 					.map(peer -> peer.path().name())
 					.collect(Collectors.toList()));
+			LOGGER.log(Level.INFO,
+					"EpTO: {0} at_{2}_{3} sent_ball_to [{1}]",
+					new Object[] {
+							this.getSelf().path().name(),
+							arrayString,
+							Long.toString(System.currentTimeMillis()),
+							this.clock.get()});
+			for (ActorRef peer : peers) {
+				peer.tell(ballMsg, this.getSelf());
+			}
 		}
-		LOGGER.log(Level.INFO,
-				"EpTO: {0} at_{2}_{3} sent_ball_to {1}",
-				new Object[] {
-						this.getSelf().path().name(),
-						arrayString,
-						Long.toString(System.currentTimeMillis()),
-						this.clock.get()});
 		if (this.asPaper) {
 			this.paperOrderEvents(ball);
 		} else {
@@ -246,6 +247,22 @@ public class EptoActor extends CyclonActor {
 			}
 			// END:TODO:HERE:
 		}
+		String globalTime  = Long.toString(System.currentTimeMillis());
+		Long   logicalTime = this.clock.get();
+		LOGGER.log(Level.INFO,
+				"EpTO: {0} at_{1}_{2} received_set {3}",
+				new Object[] {
+						this.getSelf().path().name(),
+						globalTime,
+						logicalTime,
+						received.toString()});
+		LOGGER.log(Level.INFO,
+				"EpTO: {0} at_{1}_{2} deliverable_set {3}",
+				new Object[] {
+						this.getSelf().path().name(),
+						globalTime,
+						logicalTime,
+						received.toString()});
 		for (Event event : deliverable.toSortedList()) {
 			this.delivered.add(new EventKey(event));
 			this.lastDeliveredTs = event.getTimestamp();
@@ -293,6 +310,22 @@ public class EptoActor extends CyclonActor {
 				received.remove(event);
 			}
 		}
+		String globalTime  = Long.toString(System.currentTimeMillis());
+		Long   logicalTime = this.clock.get();
+		LOGGER.log(Level.INFO,
+				"EpTO: {0} at_{1}_{2} received_set {3}",
+				new Object[] {
+						this.getSelf().path().name(),
+						globalTime,
+						logicalTime,
+						received.toString()});
+		LOGGER.log(Level.INFO,
+				"EpTO: {0} at_{1}_{2} deliverable_set {3}",
+				new Object[] {
+						this.getSelf().path().name(),
+						globalTime,
+						logicalTime,
+						received.toString()});
 		for (Event event : deliverable.toSortedList()) {
 			this.delivered.add(new EventKey(event));
 			this.lastDeliveredTs = event.getTimestamp();
