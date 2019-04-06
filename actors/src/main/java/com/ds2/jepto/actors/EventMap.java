@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class EventMap {
 
@@ -103,5 +104,13 @@ public class EventMap {
 			}
 		});
 		return tmp;
+	}
+
+	public String toString() {
+		String eventsString =  String.join(", ",
+				this.events.values().stream()
+				.map(event -> event.toString())
+				.collect(Collectors.toList()));
+		return "{ " + eventsString + " }";
 	}
 }
