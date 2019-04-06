@@ -262,7 +262,7 @@ public class EptoActor extends CyclonActor {
 						this.getSelf().path().name(),
 						globalTime,
 						logicalTime,
-						received.toString()});
+						deliverable.toString()});
 		for (Event event : deliverable.toSortedList()) {
 			this.delivered.add(new EventKey(event));
 			this.lastDeliveredTs = event.getTimestamp();
@@ -325,7 +325,7 @@ public class EptoActor extends CyclonActor {
 						this.getSelf().path().name(),
 						globalTime,
 						logicalTime,
-						received.toString()});
+						deliverable.toString()});
 		for (Event event : deliverable.toSortedList()) {
 			this.delivered.add(new EventKey(event));
 			this.lastDeliveredTs = event.getTimestamp();
