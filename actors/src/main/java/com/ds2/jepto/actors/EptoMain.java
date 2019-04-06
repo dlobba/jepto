@@ -26,8 +26,11 @@ public class EptoMain {
 
 	private static int  viewSize      = 100;
 	private static int  shuffleLength = 30;
-	private static int 	numReceivers  = 17;
-	private static long max_ttl       = 3 * 14 + 1;
+	// TODO: for easy wrong execution: K = 2, max_ttl = 2, n_actors = 3
+//	private static int 	numReceivers  = 17;
+	private static int 	numReceivers  = 2;
+//	private static long max_ttl       = 3 * 14 + 1;
+	private static long max_ttl       = 2;
 	private static long roundInterval = 5000l;
 	private static long shufflePeriod = 100l;
 
@@ -68,6 +71,8 @@ public class EptoMain {
 				viewSize,
 				shuffleLength,
 				shufflePeriod,
+				// TODO: for easy wrong execution select SEED.get()
+				//SEED.get(),
 				SEED.getAndIncrement(),
 				asPaper),
 				name);
