@@ -84,7 +84,7 @@ def parse_logs(log_file, msg_filter_func=lambda x: x is not None):
                         delivery_order[actor].append(message)
                         delta_msg[message]["actors"].append(deliveryat)
     return broadcast, delivered, delivery_order, delta_msg
-                
+
 def check_actors_total_order(delivery_order_map):
     for actor1, order1 in delivery_order_map.items():
         for actor2, order2 in delivery_order.items():
@@ -114,6 +114,52 @@ def summary(num_actors, epoch, num_messages, avg_msg, min_drate, max_drate):
     "Lowest delivery rate: {}\n".format(min_drate) +\
     "Highest delivery rate: {}\n".format(max_drate)
 
+def parse_ball(ball):
+    event_regexp = re.compile(r"\s*Event\s*"\
+                              "\[timestamp=(\d+),\s*"\
+                              "source=(\w+),\s*"\
+                              "id=(\d+),\s*"
+                              "action=(\w+),\s*"
+                              "ttl=(\d+)\s*\]\s*")
+    events = []
+    for event in event_regexp.finditer(ball):
+        ts, source, id, _, ttl = event.groups()
+        label = "{}:{}@{}_ttl={}".format(source, id, ts, ttl)
+        events.append(label)
+    return str.join(", ", events)
+
+def wrong_exec_parser(log_file, msg_filter_func=lambda x: x is not None):
+    """
+    Given a log file perform the parsing collecting information to
+    reproduce a wrong execution.
+
+    Return
+    ------
+    A list of items `<system_time, source, destination, label>` in order
+    to produce a (hopefully) valid mscgen chart.
+    """
+    actor_regexp = re.compile("INFO:\s+EpTO:\s+(\w+)\s+at_(\d+)_(\d+)\s+(\w+)\s+(.*)")
+    # collect information
+    data  = []
+    with open(log_file, "r") as fh:
+        for line in fh:
+            match = actor_regexp.match(line)
+            if not match:
+                continue
+            actor, gclock, lclock, action, argument = match.groups()
+            time = gclock
+            if "received_ball" in action:
+                rec_ball_reg = re.compile(r"\s*(\w+)\s+{\s+([^}]*)\s+}")
+                receiver, events = rec_ball_reg.match(argument).groups()
+                events_label = parse_ball(argument)
+                data.append((gclock, actor, receiver, "received_ball " + events_label))
+            elif "received_set" in action:
+                events_label = parse_ball(argument)
+                data.append((gclock, actor, actor, "received_set " + events_label))
+            if "deliverable_set" in action:
+                events_label = parse_ball(argument)
+                data.append((gclock, actor, actor, "deliverable_set " + events_label))
+    return data
 
 if __name__ == "__main__":
     """
@@ -127,6 +173,9 @@ if __name__ == "__main__":
     """    
     filter_func = lambda x: da.filter_msg(x, 10, 100)
     broadcast, msg_delivery, delivery_order, delta_msg = parse_logs(sys.argv[1], filter_func)
+    p2 = parse_logs2(sys.argv[1], filter_func)
+
+    """
 
     actor_msg     = da.compute_actor_msg(msg_delivery)
     num_actors   = len(actor_msg.keys()) 
@@ -146,3 +195,4 @@ if __name__ == "__main__":
     delays2 = list(da.delay_count(delays1, num_actors))
     delays3 = da.sum_delivery_fraction(delays2)
     da.plot_count(delays3)
+    """
