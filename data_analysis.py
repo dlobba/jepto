@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import matplotlib
 
+from scipy.stats import norm
+from collections import Counter
+
 from functools import reduce
 from itertools import groupby
 
@@ -137,6 +140,55 @@ def plot_count(delay_count):
     y = [delay_count[k] for k in x]
     y = [sum(y[0:i]) for i in range(0, len(y))]
     plt.step(x, y)
+    plt.show()
+
+def plot_drate_pdf(drate_dict, range_width):
+    label = "Distribution of the delivery rate"
+    # convert probabilities from float to int
+    x = [int(v) for v in drate_dict.values()]
+    # count how many equal values are there for each value
+    count = Counter(x)
+    # normalise counter with the total number of messages
+    num_mex = reduce(lambda x,y: x + y, count.values())
+    count = {k : round(v/num_mex,2) for k,v in count.items()}
+    # remove 0s
+    count = {k : v for k,v in count.items() if v > 0.01}
+
+    
+    bins = {}
+    # store previous min max bin extremes
+    pmin = 0
+    pmax = 0
+    for r in range(0, 101):
+        if r in count:
+            # aggregate ranges containing value 0 within a single bin
+            bins[(pmin, pmax)] = 0
+            bins[(r,r)] = count[r]
+            pmin = r + 1
+            pmax = r + 1
+        else:
+            pmax = r
+
+    # replace tuple keys with strings
+    plot_bins = {}
+    for bin_, v in bins.items():
+        i1, i2 = bin_
+        if i1 == i2:
+            plot_bins[str(i1)] = v
+        else:
+            plot_bins["{}-{}".format(i1, i2)] = v
+    return plot_bins
+
+
+    range_filter = lambda i1, i2: lambda x: x >= i1 and x <= i2
+    bins = {}
+    for r in range(0, 100, range_width):
+        rfilt = range_filter(r, r + range_width)
+        inrange = [k for k in drate_dict.values() if rfilt(k)]
+        bins["{}-{}".format(r, r+range_width)] = len(inrange)
+    return bins
+    plt.hist(bins.values(), bins=len(bins), label=label)
+    print(str(bins))
     plt.show()
 
 
