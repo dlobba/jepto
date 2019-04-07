@@ -127,7 +127,7 @@ class MSCHelper:
     # ENTITY MANAGEMENT ########################################################
 
     def add_entity(self, id,
-                   label="",
+                   label=None,
                    linecolor="#000000",
                    textcolor="#000000",
                    textbgcolor=r"#ffffff",
@@ -140,9 +140,9 @@ class MSCHelper:
         for p in color_properties:
             if not is_color(p):
                 raise InvalidColorError()
-        if label is None:
-            label = ""
         self._entities.append(id)
+        if label is None:
+            label = id
         self._entities_properties[id] =\
             {LABEL : label,
              LINECOLOR : linecolor,
@@ -155,12 +155,13 @@ class MSCHelper:
         if eid not in self._entities:
             raise ValueError("Non existing entity given")
         ep = self._entities_properties[eid]
-        return '"{}" [label="{}", '.format(eid, ep[LABEL]) +\
+        line = '"{}" [label="{}", '.format(eid, ep[LABEL]) +\
             'linecolor="{}", '.format(ep[LINECOLOR]) +\
             'textcolor="{}",  '.format(ep[TEXTCOLOR]) +\
             'textbgcolor="{}", '.format(ep[TEXTBGCOLOR]) +\
             'arclinecolor="{}", '.format(ep[ARCLINECOLOR]) +\
             'arctextbgcolor="{}"]'.format(ep[ARCTEXTBGCOLOR])
+        return line
 
     # RAW ARC MANAGEMENT #######################################################
 
@@ -223,19 +224,21 @@ class MSCHelper:
         arc_ = ARCS[arc[ARC_TYPE]]
         from_, to_ = arc[FROM], arc[TO]
         # replace None entities with empty strings
-        line = '"{}" {} "{}"'.format(from_,
+        line = '"{}" {} "{}" ['.format(from_,
                                      arc_,
                                      to_)
         if to_ is None:
-            line = '"{}" {} '.format(from_,
+            line = '"{}" {} ['.format(from_,
                                      arc_)
-        line += '[label="{}", '.format(arc[LABEL]) +\
-             'url="{}", '.format(arc[URL]) +\
-             'id="{}", '.format(arc[ID]) +\
-             'arcskip="{}", '.format(arc[ARCSKIP]) +\
-             'linecolor="{}", '.format(arc[LINECOLOR]) +\
-             'textcolor="{}",  '.format(arc[TEXTCOLOR]) +\
-             'textbgcolor="{}"]'.format(arc[TEXTBGCOLOR])
+
+        if arc[LABEL] is not None:
+            line += 'label="{}", '.format(arc[LABEL])
+        line += 'url="{}", '.format(arc[URL]) +\
+            'id="{}", '.format(arc[ID]) +\
+            'arcskip="{}", '.format(arc[ARCSKIP]) +\
+            'linecolor="{}", '.format(arc[LINECOLOR]) +\
+            'textcolor="{}",  '.format(arc[TEXTCOLOR]) +\
+            'textbgcolor="{}"]'.format(arc[TEXTBGCOLOR])
         return line
 
     # ARC MANAGEMENT ###########################################################
@@ -321,8 +324,10 @@ class MSCHelper:
         by a private method.
         """
         div_type = DIVS[div[DIV_TYPE]]
-        div_ = '{} [label="{}", '.format(div_type, div[LABEL]) +\
-             'url="{}", '.format(div[URL]) +\
+        div_ = '{} ['.format(div_type)
+        if div[LABEL] is not None:
+            div_ += 'label="{}", '.format(div[LABEL])
+        div_ += 'url="{}", '.format(div[URL]) +\
              'id="{}", '.format(div[ID]) +\
              'linecolor="{}", '.format(div[LINECOLOR]) +\
              'textcolor="{}",  '.format(div[TEXTCOLOR]) +\
