@@ -172,7 +172,7 @@ def wrong_exec_parser(log_file, msg_filter_func=lambda x: x is not None):
 
 def make_msc(csv_data):
     h = MSCHelper()
-    for _, source, destination, label in csv_data:
+    for _, destination, source, label in csv_data:
         new_lines = label.split(",")
         label = str.join("\\n"*2, new_lines)
         h.add_entity(source)
@@ -202,10 +202,10 @@ if __name__ == "__main__":
     #filter_func = lambda x: da.filter_msg(x, 10, 100)
     filter_func = lambda x: False
     broadcast, msg_delivery, delivery_order, delta_msg = parse_logs(sys.argv[1], filter_func)
-    p2 = wrong_exec_parser(sys.argv[1], filter_func)
-    k = make_msc(p2)
-    with open("msc.txt", "w") as fh:
-        fh.write(k.make_msc())
+    #p2 = wrong_exec_parser(sys.argv[1], filter_func)
+    #k = make_msc(p2)
+    #with open("msc.txt", "w") as fh:
+    #    fh.write(k.make_msc())
 
 
     actor_msg     = da.compute_actor_msg(msg_delivery)
@@ -221,6 +221,8 @@ if __name__ == "__main__":
 
     print(summary(num_actors, epoch, num_messages, avg_msg,\
                   min_drate, max_drate))
+
+    bins = da.plot_drate_pdf(delivery_rate, 5)
     """
     delays1 = da.compute_delivery_delay(delta_msg)
     delays2 = list(da.delay_count(delays1, num_actors))
