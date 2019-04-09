@@ -12,6 +12,8 @@ import java.util.logging.SimpleFormatter;
 
 import com.ds2.jepto.actors.ActorMain.EptoInputException;
 import com.ds2.jepto.actors.cyclon.JoinMsg;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -27,14 +29,15 @@ public class EptoMain {
 	private static int  viewSize      = 100;
 	private static int  shuffleLength = 30;
 	// TODO: for easy wrong execution: K = 2, max_ttl = 2, n_actors = 3
-//	private static int 	numReceivers  = 17;
+	//	private static int 	numReceivers  = 17;
 	private static int 	numReceivers  = 2;
-//	private static long max_ttl       = 3 * 14 + 1;
-	private static long max_ttl       = 2;
+	//	private static long max_ttl       = 3 * 14 + 1;
+	private static long maxTtl        = 2;
 	private static long roundInterval = 5000l;
 	private static long shufflePeriod = 100l;
 
-	private static boolean asPaper = false;
+	private static long numActors   = 100l;
+	private static boolean asPaper  = false;
 
 	private static void createExecutionLogFile() {
 		try {
@@ -65,7 +68,7 @@ public class EptoMain {
 	 * @return
 	 */
 	private static ActorRef createActor(ActorSystem system, String name) {
-		return system.actorOf(EptoActor.props(max_ttl,
+		return system.actorOf(EptoActor.props(maxTtl,
 				numReceivers,
 				roundInterval,
 				viewSize,
@@ -117,29 +120,74 @@ public class EptoMain {
 		}
 	}
 
+	public static void setRunParameters(Config config) throws EptoInputException {
+		String parameters[] = new String[] {
+				"jepto.config.cyclon.view-size",
+				"jepto.config.cyclon.shuffle-length",
+				"jepto.config.cyclon.shuffle-period-millis",
+				"jepto.config.num-receivers",
+				"jepto.config.max-ttl",
+				"jepto.config.round-interval",
+				"jepto.config.num-actors",
+				"jepto.config.as-paper"};
+		for (String param : parameters) {
+			if (config.hasPath(param) == false) {
+				throw new EptoInputException("No parameter " +
+						param +
+						" found in the run configuration file.");
+			}
+		}
+		viewSize      = Integer.parseUnsignedInt(config.getString(parameters[0]));
+		shuffleLength = Integer.parseUnsignedInt(config.getString(parameters[1]));
+		shufflePeriod = Long.parseUnsignedLong(config.getString(parameters[2]));
+		numReceivers  = Integer.parseUnsignedInt(config.getString(parameters[3]));
+		maxTtl        = Long.parseUnsignedLong(config.getString(parameters[4]));
+		roundInterval = Long.parseUnsignedLong(config.getString(parameters[5]));
+		numActors     = Long.parseUnsignedLong(config.getString(parameters[6]));
+		asPaper       = Boolean.parseBoolean(config.getString(parameters[7]));
+	}
+
+	public static void printRunParameters() {
+		StringBuilder str = new StringBuilder();
+		str.append("Num actors:\t\t" + numActors + "\n");
+		str.append("Max ttl:\t\t" + maxTtl + "\n");
+		str.append("Num receivers (K):\t" + numReceivers + "\n");
+		str.append("Round interval:\t\t" + roundInterval + "\n");
+		str.append("As paper:\t\t" + asPaper + "\n");
+		str.append("Cyclon view size:\t" + viewSize + "\n");
+		str.append("Cyclon shuffle length:\t"+ shuffleLength + "\n");
+		str.append("Cyclon shuffle period:\t" + shufflePeriod);
+		LOGGER.log(Level.INFO, "Run parameters\n" + str.toString());
+	}
+
 	public static void main(String[] args) throws EptoInputException {
 		/*********************************************************************/
 		/*                       Input handling                              */
 		/*********************************************************************/
-		String numActorStr = System.getProperty("actors.num");
-		String defaultNumActorStr = System.getProperty("actors.num.default");
-		if (numActorStr == null && defaultNumActorStr == null) {
-			throw new ActorMain.EptoInputException("No actors number defined");
-		}
-		String asPaperStr = System.getProperty("as.paper");
-		String asPaperDefault = System.getProperty("as.paper.default");
-		if (asPaperStr != null) {
-			asPaper = Boolean.parseBoolean(asPaperStr);
-			if (asPaper)
-				LOGGER.log(Level.INFO, "Starting simulation as described in the paper.");
-		}
-
-		long numActors;
-		if (numActorStr != null) {
-			numActors = Long.parseUnsignedLong(numActorStr);
+		String runConfigPath = System.getProperty("run.config");
+		Config runConfig;
+		if (runConfigPath != null) {
+			runConfig = ConfigFactory.load(runConfigPath);
+			setRunParameters(runConfig);
 		} else {
-			numActors = Long.parseUnsignedLong(defaultNumActorStr);
+			// try to obtain num actors and as_paper parameters form cli
+			String numActorStr = System.getProperty("actors.num");
+			String defaultNumActorStr = System.getProperty("actors.num.default");
+			if (numActorStr == null && defaultNumActorStr == null) {
+				throw new ActorMain.EptoInputException("No actors number defined");
+			}
+			String asPaperStr = System.getProperty("as.paper");
+			String asPaperDefault = System.getProperty("as.paper.default");
+			if (asPaperStr != null) {
+				asPaper = Boolean.parseBoolean(asPaperStr);
+			}
+			if (numActorStr != null) {
+				numActors = Long.parseUnsignedLong(numActorStr);
+			} else {
+				numActors = Long.parseUnsignedLong(defaultNumActorStr);
+			}
 		}
+		printRunParameters();
 		/*********************************************************************/
 
 		createExecutionLogFile();
