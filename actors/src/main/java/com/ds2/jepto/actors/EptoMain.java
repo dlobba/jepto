@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.FileHandler;
+import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -38,8 +39,9 @@ public class EptoMain {
 
 	private static long numActors   = 100l;
 	private static boolean asPaper  = false;
+	private static Level logLevel   = Level.INFO;
 
-	private static void createExecutionLogFile() {
+	private static void createExecutionLogFile(Level level) {
 		try {
 			// create a specific log for the actor
 			String path = System.getProperty("user.home") + File.separator
@@ -53,6 +55,12 @@ public class EptoMain {
 			LOGGER.addHandler(loggerFileHandler);
 			SimpleFormatter sf = new SimpleFormatter();
 			loggerFileHandler.setFormatter(sf);
+
+			// change level for the handlers and the logger
+			LOGGER.setLevel(level);
+			for (Handler handler: LOGGER.getHandlers()) {
+				handler.setLevel(level);
+			}
 		} catch (SecurityException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -145,6 +153,8 @@ public class EptoMain {
 		roundInterval = Long.parseUnsignedLong(config.getString(parameters[5]));
 		numActors     = Long.parseUnsignedLong(config.getString(parameters[6]));
 		asPaper       = Boolean.parseBoolean(config.getString(parameters[7]));
+		if (config.hasPath("jepto.config.log-level"))
+			logLevel = DebugLevel.parse(config.getString("jepto.config.log-level"));
 	}
 
 	public static void printRunParameters() {
@@ -187,10 +197,10 @@ public class EptoMain {
 				numActors = Long.parseUnsignedLong(defaultNumActorStr);
 			}
 		}
+		createExecutionLogFile(logLevel);
+		LOGGER.log(logLevel, "Set base log level to " + logLevel.toString());
 		printRunParameters();
 		/*********************************************************************/
-
-		createExecutionLogFile();
 		runSingleStar(numActors);
 	}
 }

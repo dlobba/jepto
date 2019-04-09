@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.FileHandler;
+import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -61,7 +62,7 @@ public class ActorMain {
 
 	private static boolean asPaper    = false;
 
-	private static void createActorLogFile(String actorName) {
+	private static void createActorLogFile(String actorName, Level level) {
 		try {
 			// create a specific log for the actor
 			String path = System.getProperty("user.home") + File.separator
@@ -75,6 +76,11 @@ public class ActorMain {
 			LOGGER.addHandler(loggerFileHandler);
 			SimpleFormatter sf = new SimpleFormatter();
 			loggerFileHandler.setFormatter(sf);
+			// change level for the handlers and the logger
+			LOGGER.setLevel(level);
+			for (Handler handler: LOGGER.getHandlers()) {
+				handler.setLevel(level);
+			}
 		} catch (SecurityException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -163,7 +169,7 @@ public class ActorMain {
 	        		SEED,
 	        		asPaper),
 	        		participantId);
-			createActorLogFile(participantId);
+			createActorLogFile(participantId, Level.INFO);
 			LOGGER.log(Level.INFO, "Tracker {0} started.",
 					actor.path().name());
 
@@ -207,7 +213,7 @@ public class ActorMain {
 				System.exit(-1);
 			}
 
-	        createActorLogFile(participantId);
+	        createActorLogFile(participantId, Level.INFO);
 	        LOGGER.log(Level.INFO, "Peer {0} started.",
 					actor.path().name());
 	        actor.tell(new JoinMsg(tracker), null);
