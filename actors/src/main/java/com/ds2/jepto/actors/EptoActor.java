@@ -146,7 +146,7 @@ public class EptoActor extends CyclonActor {
 	}
 
 	private void onBallMsg(BallMsg msg) {
-		LOGGER.log(Level.INFO,
+		LOGGER.log(DebugLevel.DEBUG,
 				"EpTO: {0} at_{2}_{3} received_ball_from {1} {4}",
 				new Object[] {
 						this.getSelf().path().name(),
@@ -188,7 +188,7 @@ public class EptoActor extends CyclonActor {
 					peers.stream()
 					.map(peer -> peer.path().name())
 					.collect(Collectors.toList()));
-			LOGGER.log(Level.INFO,
+			LOGGER.log(DebugLevel.DEBUG,
 					"EpTO: {0} at_{2}_{3} sent_ball_to [{1}]",
 					new Object[] {
 							this.getSelf().path().name(),
@@ -249,14 +249,14 @@ public class EptoActor extends CyclonActor {
 		}
 		String globalTime  = Long.toString(System.currentTimeMillis());
 		Long   logicalTime = this.clock.get();
-		LOGGER.log(Level.INFO,
+		LOGGER.log(DebugLevel.DEBUG,
 				"EpTO: {0} at_{1}_{2} received_set {3}",
 				new Object[] {
 						this.getSelf().path().name(),
 						globalTime,
 						logicalTime,
 						received.toString()});
-		LOGGER.log(Level.INFO,
+		LOGGER.log(DebugLevel.DEBUG,
 				"EpTO: {0} at_{1}_{2} deliverable_set {3}",
 				new Object[] {
 						this.getSelf().path().name(),
@@ -312,14 +312,14 @@ public class EptoActor extends CyclonActor {
 		}
 		String globalTime  = Long.toString(System.currentTimeMillis());
 		Long   logicalTime = this.clock.get();
-		LOGGER.log(Level.INFO,
+		LOGGER.log(DebugLevel.DEBUG,
 				"EpTO: {0} at_{1}_{2} received_set {3}",
 				new Object[] {
 						this.getSelf().path().name(),
 						globalTime,
 						logicalTime,
 						received.toString()});
-		LOGGER.log(Level.INFO,
+		LOGGER.log(DebugLevel.DEBUG,
 				"EpTO: {0} at_{1}_{2} deliverable_set {3}",
 				new Object[] {
 						this.getSelf().path().name(),
@@ -363,11 +363,6 @@ public class EptoActor extends CyclonActor {
 				Action.values()[new Random(this.SEED)
 				                .nextInt(Action.values().length)]);
 		this.eptoBroadcast(newEvent);
-//		LOGGER.log(Level.INFO,
-//				"Actor {0} generated {1}",
-//				new Object[] {
-//						this.getSelf().path().name(),
-//						newEvent.toString()});
 		sendGenEventMsg();
 	}
 
