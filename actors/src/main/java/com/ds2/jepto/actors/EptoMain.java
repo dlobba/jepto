@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -18,6 +19,7 @@ import com.typesafe.config.ConfigFactory;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import scala.concurrent.duration.Duration;
 
 public class EptoMain {
 
@@ -40,6 +42,7 @@ public class EptoMain {
 	private static long numActors   = 100l;
 	private static boolean asPaper  = false;
 	private static Level logLevel   = Level.INFO;
+	private static Duration simTime = null;
 
 	private static void createExecutionLogFile(Level level) {
 		try {
@@ -97,7 +100,6 @@ public class EptoMain {
 	 * @throws EptoInputException
 	 */
 	public static void runSingleStar(long numActors) throws EptoInputException {
-
 		if (numActors < 2) {
 			throw new EptoInputException("Too few actors defined");
 		}
@@ -122,8 +124,11 @@ public class EptoMain {
 			for(ActorRef peer : peers) {
 				peer.tell(new EptoActor.EptoStartMsg(), null);
 			}
+			if (simTime != null) {
+				Thread.sleep(simTime.toMillis());
+				system.terminate();
+			}
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -153,6 +158,15 @@ public class EptoMain {
 		roundInterval = Long.parseUnsignedLong(config.getString(parameters[5]));
 		numActors     = Long.parseUnsignedLong(config.getString(parameters[6]));
 		asPaper       = Boolean.parseBoolean(config.getString(parameters[7]));
+
+		// handling optional parameters
+		// 1) if simulation time is not defined, run the simulation indefinitely
+		if (config.hasPath("jepto.config.sim-time")) {
+			simTime = Duration.create(
+					Long.parseUnsignedLong(config.getString("jepto.config.sim-time")),
+					TimeUnit.SECONDS);
+		}
+		// 2) define the minimum log level from which starting to print logs
 		if (config.hasPath("jepto.config.log-level"))
 			logLevel = DebugLevel.parse(config.getString("jepto.config.log-level"));
 	}
@@ -201,6 +215,13 @@ public class EptoMain {
 		LOGGER.log(logLevel, "Set base log level to " + logLevel.toString());
 		printRunParameters();
 		/*********************************************************************/
-		runSingleStar(numActors);
+		if (simTime != null) {
+			LOGGER.log(Level.INFO, "Starting run for {0} s", new Object[]{simTime.toSeconds()});
+			runSingleStar(numActors);
+			LOGGER.log(Level.INFO, "Terminating run");
+		} else {
+			LOGGER.log(Level.INFO, "Starting run");
+			runSingleStar(numActors);
+		}
 	}
 }
