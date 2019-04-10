@@ -191,7 +191,14 @@ public class EptoMain {
 		String runConfigPath = System.getProperty("run.config");
 		Config runConfig;
 		if (runConfigPath != null) {
-			runConfig = ConfigFactory.load(runConfigPath);
+			// try to parse the config file as an external
+			// file. If it fails, default to a file within the classpath
+			File configFile = new File(runConfigPath);
+			if (configFile.exists()) {
+				runConfig = ConfigFactory.parseFile(configFile);
+			} else {
+				runConfig = ConfigFactory.load(runConfigPath);
+			}
 			setRunParameters(runConfig);
 		} else {
 			// try to obtain num actors and as_paper parameters form cli
@@ -216,7 +223,8 @@ public class EptoMain {
 		printRunParameters();
 		/*********************************************************************/
 		if (simTime != null) {
-			LOGGER.log(Level.INFO, "Starting run for {0} s", new Object[]{simTime.toSeconds()});
+			LOGGER.log(Level.INFO, "Starting run for {0} s",
+					new Object[]{simTime.toSeconds()});
 			runSingleStar(numActors);
 			LOGGER.log(Level.INFO, "Terminating run");
 		} else {
