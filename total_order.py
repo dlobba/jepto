@@ -1,19 +1,5 @@
 from difflib import SequenceMatcher
 
-# Out-Of-Order exception
-class OOOException(Exception): pass
-# Double Delivery Exception
-class DDException(Exception): pass
-
-def element_appears(given_sequence, in_sequence, appearing_elements=[]):
-    temp_seq = [i for i in in_sequence]
-    for element in given_sequence:
-        if element in temp_seq:
-            appearing_elements.append(element)
-            return True
-        temp_seq.append(element)
-    return False
-
 def total_order(seq1, seq2):
     matcher = SequenceMatcher(None, seq1, seq2, autojunk=False)
     previous1 = []
