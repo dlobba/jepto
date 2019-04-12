@@ -33,7 +33,9 @@ public class EptoActor extends CyclonActor {
 	public final long MAX_TTL;
 	public final int  NUM_RECEIVERS; // it's the K in the paper
 
-	private final long SEED;
+	// pseudo random number generator
+	private final Random prng;
+
 	// private int  id; USE THE ACTOR REF REFERENCE!
 	private long roundInterval;
 	private long genEventInterval;
@@ -65,7 +67,7 @@ public class EptoActor extends CyclonActor {
 		this.nextBall = new EventMap();
 		this.NUM_RECEIVERS = numReceivers;
 		this.MAX_TTL = max_ttl;
-		this.SEED = seed;
+		this.prng = new Random(seed);
 		this.received = new EventMap();
 		this.delivered = new HashSet<>();
 		this.lastDeliveredTs = -1l;
@@ -340,9 +342,8 @@ public class EptoActor extends CyclonActor {
 
 	private List<ActorRef> getPeers() {
 		Map<ActorRef, Long> view = this.getView();
-		Random rnd = new Random(this.SEED);
 		List<ActorRef> listActors = new ArrayList<ActorRef>(view.keySet());
-		Collections.shuffle(listActors, rnd);
+		Collections.shuffle(listActors, new Random(prng.nextInt()));
 		int size = Integer.min(listActors.size(), NUM_RECEIVERS);
 		return listActors.subList(0, size);
 	}
@@ -360,7 +361,7 @@ public class EptoActor extends CyclonActor {
 	private void onGenEventMsg(GenEventMsg msg) {
 		Event newEvent = new Event(
 				nextEventId.getAndIncrement(),
-				Action.values()[new Random(this.SEED)
+				Action.values()[this.prng
 				                .nextInt(Action.values().length)]);
 		this.eptoBroadcast(newEvent);
 		sendGenEventMsg();
@@ -390,7 +391,7 @@ public class EptoActor extends CyclonActor {
 		.getSystem()
 		.scheduler()
 		.scheduleOnce(Duration.create(
-				(new Random(this.SEED).nextLong() % this.genEventInterval) + 10000,
+				(this.prng.nextLong() % this.genEventInterval) + 10000,
 				TimeUnit.MILLISECONDS),
 				this.getSelf(),
 				new GenEventMsg(),

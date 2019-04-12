@@ -27,7 +27,7 @@ public class CyclonActor extends AbstractActor {
 	public static class AgingMsg implements Serializable {};
 	private static class ShufflingMsg implements Serializable {};
 
-	private final long seed;
+	private final Random prng;
 	private long shufflePeriod;
 	private int  cacheSize;
 	private int msgId;
@@ -55,7 +55,7 @@ public class CyclonActor extends AbstractActor {
 		if (shuffleLength > cacheSize)
 			this.shuffleLength = cacheSize;
 		this.shufflePeriod = shufflePeriod;
-		this.seed = seed;
+		this.prng = new Random(seed);
 		this.cache = new HashMap<ActorRef, Long>();
 		this.buffer = null;
 		this.msgId = 0;
@@ -153,9 +153,8 @@ public class CyclonActor extends AbstractActor {
 	 * copyCache is changed!
 	 */
 	private Map<ActorRef, Long> selectOthersFrom(int numOthers, Map<ActorRef, Long> copyCache) {
-		Random rnd = new Random(this.seed);
 		List<ActorRef> listActors = new ArrayList<ActorRef>(copyCache.keySet());
-		Collections.shuffle(listActors, rnd);
+		Collections.shuffle(listActors, new Random(prng.nextInt()));
 		int index = 0;
 		while (copyCache.size() > numOthers)
 			copyCache.remove(listActors.get(index++));
