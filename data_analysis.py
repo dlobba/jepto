@@ -76,30 +76,16 @@ def sum_delivery_fraction(delay_dict):
         count_msg += 1
     return {k:v/count_msg for k,v in tot_delay.items()}
 
-def filter_msg(data, min_msg=None, max_msg=None):
-    if max_msg is None and min_msg is None:
-        return data
-    if min_msg is None:
-        min_msg = 0
-
-    temp = data.copy()
-    for msg, v in data.items():
-        msg_i = int(msg.split(":")[-1])
-        if msg_i < min_msg or\
-           (max_msg is not None and msg_i > max_msg):
-            temp.pop(msg)
-    return temp
 
 def filter_msg(msg, min_msg=None, max_msg=None):
     """
     Return False if, given a message id `msg_i`, it is true:
-    
+
     min_msg <= msg_i <= max_msg
 
     Note
     ----
     The message `msg` is given in the form `actor:msg_id`.
-    @deprecated
     """
     msg_i = int(msg.split(":")[-1])
     if min_msg is not None and msg_i < min_msg:
@@ -124,7 +110,7 @@ def compute_actor_msg(msg_list):
     return actor_msg
 
 def compute_delivery_rate(delivered_msg_map, num_actors):
-    return {msg : round(len(actors)/num_actors * 100, 2)\
+    return {msg : len(actors)/num_actors * 100\
             for msg, actors in delivered_msg_map.items()}
 
 def compute_epoch(actor_msg):
@@ -132,7 +118,7 @@ def compute_epoch(actor_msg):
     Compute the lowest and highest message ids.
     """
     messages = reduce(lambda x,y: set(x).union(set(y)), actor_msg.values())
-    return min(messages), max(messages)       
+    return min(messages), max(messages)
 
 def plot_count(delay_count):
     x = list(delay_count.keys())
@@ -142,7 +128,18 @@ def plot_count(delay_count):
     plt.step(x, y)
     plt.show()
 
-def plot_drate_pdf(drate_dict, range_width):
+def plot_drate_pdf(drate_dict):
+    """
+    Produce an histogram plotting the fraction
+    of messages having a given delivery rate.
+
+    During the processing, delivery rate values
+    below 0.01 are discarded, in order to exclude
+    bars whose value would be unnoticeable.
+
+    Additionally, zero-valued bins are grouped
+    within a single bar (whose value is 0).
+    """
     label = "Distribution of the delivery rate"
     # convert probabilities from float to int
     x = [int(v) for v in drate_dict.values()]
@@ -153,8 +150,6 @@ def plot_drate_pdf(drate_dict, range_width):
     count = {k : round(v/num_mex,2) for k,v in count.items()}
     # remove 0s
     count = {k : v for k,v in count.items() if v > 0.01}
-
-    
     bins = {}
     # store previous min max bin extremes
     pmin = 0
@@ -177,19 +172,47 @@ def plot_drate_pdf(drate_dict, range_width):
             plot_bins[str(i1)] = v
         else:
             plot_bins["{}-{}".format(i1, i2)] = v
+    plt.bar(plot_bins.keys(), plot_bins.values())
+    #plt.title(label)
+    plt.xlabel("Delivery rate")
+    plt.ylabel("pdf")
+    plt.show()
     return plot_bins
 
+def plot_drate_ranges(drate_dict, range_of_interest):
+    """
+    Produce an histogram plotting the fraction
+    of messages having a given delivery rate.
 
-    range_filter = lambda i1, i2: lambda x: x >= i1 and x <= i2
-    bins = {}
-    for r in range(0, 100, range_width):
-        rfilt = range_filter(r, r + range_width)
-        inrange = [k for k in drate_dict.values() if rfilt(k)]
-        bins["{}-{}".format(r, r+range_width)] = len(inrange)
-    return bins
-    plt.hist(bins.values(), bins=len(bins), label=label)
-    print(str(bins))
+    `range_of_interest` is a two-valued
+    tuple defining the extremes to be considered in the
+    counting.
+    """
+    left, right = range_of_interest
+    left  = int(left)
+    right = int(right)
+    if left >= right:
+        raise ValueError("same extreme values given")
+    if left < 0:
+        raise ValueError()
+    if right > 100:
+        raise ValueError()
+    #label = "Distribution of the delivery rate in {}-{}"\
+    #        .format(left, right)
+    # convert probabilities from float to int
+    x = [int(v) for v in drate_dict.values()]
+    # filter values not in the range of interest
+    x = list(filter(lambda x: x >= left and x <= right, x))
+    # count how many equal values are there for each value
+    count = Counter(x)
+    # normalise counter with the total number of messages
+    num_mex = reduce(lambda x,y: x + y, count.values())
+    bins = count
+    plt.bar(bins.keys(), bins.values())
+    plt.xlabel("Delivery rate")
+    plt.ylabel("pdf")
     plt.show()
+    return bins
 
 
 if __name__ == "__main__":
