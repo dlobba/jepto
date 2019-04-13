@@ -33,7 +33,7 @@ def element_appears(given_sequence, in_sequence, appearing_elements=[]):
 
 def check_actors_total_order(delivery_order_map):
     for actor1, order1 in delivery_order_map.items():
-        for actor2, order2 in delivery_order.items():
+        for actor2, order2 in delivery_order_map.items():
             torder_satisfied, relation =  to.total_order(order1, order2)
             if not torder_satisfied:
                 str_index, el1, el2 = relation
@@ -45,4 +45,4 @@ def check_actors_total_order(delivery_order_map):
                                    " have different delivery order: "\
                                    "{} has {}->{}"
                                    .format(actor1, actor2, actor, el1, el2),\
-                                   (actor1, actor2, actor, el1, el2))
+                                   (actor1, actor2, el1, el2))
