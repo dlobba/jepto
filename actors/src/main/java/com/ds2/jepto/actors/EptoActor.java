@@ -185,7 +185,7 @@ public class EptoActor extends CyclonActor {
 		}
 		if (!ball.isEmpty()) {
 			List<ActorRef> peers = getPeers();
-			BallMsg ballMsg = new BallMsg(ball);
+			BallMsg ballMsg = new BallMsg(ball.clone());
 			arrayString = String.join(", ",
 					peers.stream()
 					.map(peer -> peer.path().name())
@@ -391,7 +391,7 @@ public class EptoActor extends CyclonActor {
 		.getSystem()
 		.scheduler()
 		.scheduleOnce(Duration.create(
-				(this.prng.nextLong() % this.genEventInterval) + 10000,
+				(this.prng.nextLong() % this.genEventInterval) + this.roundInterval / 2,
 				TimeUnit.MILLISECONDS),
 				this.getSelf(),
 				new GenEventMsg(),
