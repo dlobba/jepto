@@ -17,6 +17,19 @@ public class Event implements Serializable {
 	private int  ttl;
 	private final Action action;
 
+	private Event(int id,
+			Action action,
+			ActorRef source,
+			long timestamp,
+			int ttl) {
+		super();
+		this.id = id;
+		this.action = action;
+		this.source = source;
+		this.timestamp = timestamp;
+		this.ttl = ttl;
+	}
+
 	/**
 	 * Initialise a new event with ttl set to 0.
 	 *
@@ -24,12 +37,15 @@ public class Event implements Serializable {
 	 * @param timestamp
 	 */
 	public Event(int id, Action action) {
-		super();
-		this.id = id;
-		this.action = action;
-		this.source = null;
-		this.timestamp = 0l;
-		this.ttl = 0;
+		this(id, action, null, 0l, 0);
+	}
+
+	public Event(Event event) {
+		this(event.id,
+			event.action,
+			event.source,
+			event.timestamp,
+			event.ttl);
 	}
 
 	public long getTimestamp() {

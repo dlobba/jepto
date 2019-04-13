@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 public class EventMap {
 
-	Map<EventKey, Event> events;
+	private Map<EventKey, Event> events;
 
 	public EventMap() {
 		this.events = new HashMap<>();
@@ -17,13 +17,16 @@ public class EventMap {
 
 	public EventMap(Map<EventKey, Event> events) {
 		this.events = new HashMap<>();
-		this.events.putAll(events);
+		// do not use putAll due to reference copy!
+		for (Event event : events.values()) {
+			this.insert(event);
+		}
 	}
 
 	public void insert(Event event) {
 		this.events.put(
 				new EventKey(event.getSource(), event.getId()),
-				event);
+				new Event(event));
 	}
 
 	public void remove(Event event) {
@@ -49,19 +52,19 @@ public class EventMap {
 	public void update(Event event) {
 		this.events.put(
 				new EventKey(event.getSource(), event.getId()),
-				event);
+				new Event(event));
 	}
 
 	public void incrementTtl() {
 		for (Event event : events.values()) {
 			event.setTtl(event.getTtl() + 1);
-			this.update(event);
 		}
 	}
 
 	public List<Event> toList() {
-		Event events[] = new Event[this.events.size()];
-		return Arrays.asList(this.events.values().toArray(events));
+		EventMap eventMap = this.clone();
+		Event events[] = new Event[eventMap.events.size()];
+		return Arrays.asList(eventMap.events.values().toArray(events));
 	}
 
 	/**
@@ -73,7 +76,7 @@ public class EventMap {
 		for (Event event : eventList) {
 			this.events.put(
 					new EventKey(event.getSource(), event.getId()),
-					event);
+					new Event(event));
 		}
 	}
 
@@ -91,8 +94,9 @@ public class EventMap {
 	}
 
 	public List<Event> toSortedList() {
-		Event events[] = new Event[this.events.size()];
-		List<Event> tmp = Arrays.asList(this.events.values().toArray(events));
+		EventMap eventMap = this.clone();
+		Event events[] = new Event[eventMap.events.size()];
+		List<Event> tmp = Arrays.asList(eventMap.events.values().toArray(events));
 		tmp.sort(new Comparator<Event>() {
 			@Override
 			public int compare(Event event0, Event event1) {
