@@ -59,13 +59,34 @@ def wrong_exec_parser(log_file, msg_filter_func=lambda x: x is not None):
 
     return sorted(data, key=operator.itemgetter(0)), delivery_order
 
-def make_msc(csv_data):
+def make_msc(csv_data, ooo_tuple=(None,None,None,None)):
+    act1, act2, m1, m2 = ooo_tuple
+    print(m1)
+    print(m2)
+    k_entities = (act1, act2)
     h = MSCHelper()
     for _, destination, source, label in csv_data:
-        new_lines = label.split(",")
-        label = str.join("\\n"*2, new_lines)
+        # filter events ------------------------ #
+
+        label = [k.strip() for k in label.split()]
+        tmp_label = [label[0]]
+        for tag in label[1:]:
+            if m1 in tag or m2 in tag:
+                tmp_label.append(tag)
+        label = str.join("", tmp_label)
+                        
+        if destination not in k_entities or\
+           source not in k_entities:
+            continue
+
+        if m1 not in label and\
+           m2 not in label:
+            continue
+        # -------------------------------------- #
         h.add_entity(source)
         h.add_entity(destination)
+        new_lines = label.split(",")
+        label = str.join("\\n" * 2, new_lines)
         if "delivered" in label:
             color = "#ff0000"
         else:
@@ -77,20 +98,6 @@ def make_msc(csv_data):
             h.new_line()
         h.end_line()
     return h
-
-def filter_OOO(msch, ooo_tuple):
-    act1, act2, m1, m2 = ooo_tuple
-    # elements to keep (k prefix)
-    k_entities = (act1, act2)
-    
-    t_msch = MSCHelper()
-    for entity in msch._entities:
-        if entity in k_entities:
-            t_msch.add_entity(entity, **msch._entities_properties[entity])
-    ignored_last = False
-    #for line in msch._lines:
-    #    for
-    
 
 def exit():
     help_ = "\nUsage:\n trace_parse.py <log-file> <msc-out-file>\n"
@@ -112,16 +119,13 @@ if __name__ == "__main__":
         exit()
     filter_func = lambda x: False
     events, delivery_order = wrong_exec_parser(in_, filter_func)
-    msch = make_msc(events)
-    """
+    ooo_tuple = (None, None, None, None)
     try:
         check_actors_total_order(delivery_order)
     except OOOException as e:
-        act1, act2, m1, m2 = e.upair
-
-    print(act1)
-        
-    msch = make_msc(events)
+        ooo_tuple = e.upair
+    finally:
+        msch = make_msc(events, ooo_tuple)
+    print(ooo_tuple)
     with open(out_, "w") as fh:
         fh.write(msch.make_msc())
-    """
