@@ -50,6 +50,9 @@ public class EptoActor extends CyclonActor {
 
 	private boolean asPaper;
 
+	// flag used by single-run execution
+	private Boolean canSend;
+
 	public EptoActor(
 			long max_ttl,
 			int numReceivers,
@@ -58,7 +61,8 @@ public class EptoActor extends CyclonActor {
 			int shuffleLength,
 			long shufflePeriod,
 			long seed,
-			boolean asPaper) {
+			boolean asPaper,
+			Boolean canSend) {
 		super(viewSize, shuffleLength, shufflePeriod, seed);
 		this.roundInterval    = roundInterval;
 		this.genEventInterval = roundInterval;
@@ -72,6 +76,7 @@ public class EptoActor extends CyclonActor {
 		this.delivered = new HashSet<>();
 		this.lastDeliveredTs = -1l;
 		this.asPaper = asPaper;
+		this.canSend = canSend;
 	}
 
 	public static Props props(
@@ -82,7 +87,8 @@ public class EptoActor extends CyclonActor {
 			int shuffleLength,
 			long shufflePeriod,
 			long seed,
-			boolean asPaper)
+			boolean asPaper,
+			Boolean canSend)
 	{
 		return Props.create(EptoActor.class,
 				() -> new EptoActor(max_ttl,
@@ -92,7 +98,8 @@ public class EptoActor extends CyclonActor {
 						shuffleLength,
 						shufflePeriod,
 						seed,
-						asPaper));
+						asPaper,
+						canSend));
 	}
 
 	public Map<ActorRef, Long> getView() {
@@ -359,6 +366,9 @@ public class EptoActor extends CyclonActor {
 	}
 
 	private void onGenEventMsg(GenEventMsg msg) {
+		if (canSend != null && canSend) {
+			canSend = false;
+		}
 		Event newEvent = new Event(
 				nextEventId.getAndIncrement(),
 				Action.values()[this.prng
@@ -387,6 +397,9 @@ public class EptoActor extends CyclonActor {
 	}
 
 	private void sendGenEventMsg() {
+		if (canSend != null && !canSend) {
+			return;
+		}
 		this.getContext()
 		.getSystem()
 		.scheduler()

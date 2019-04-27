@@ -3,7 +3,9 @@ package com.ds2.jepto.actors;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.FileHandler;
@@ -44,6 +46,8 @@ public class EptoMain {
 	private static Level logLevel   = Level.INFO;
 	private static Duration simTime = null;
 
+	private static Long numSenders = null;
+
 	private static void createExecutionLogFile(Level level) {
 		try {
 			// create a specific log for the actor
@@ -78,7 +82,7 @@ public class EptoMain {
 	 * @param name
 	 * @return
 	 */
-	private static ActorRef createActor(ActorSystem system, String name) {
+	private static ActorRef createActor(ActorSystem system, String name, Boolean canSend) {
 		return system.actorOf(EptoActor.props(maxTtl,
 				numReceivers,
 				roundInterval,
@@ -88,7 +92,8 @@ public class EptoMain {
 				// TODO: for easy wrong execution select SEED.get()
 				//SEED.get(),
 				SEED.getAndIncrement(),
-				asPaper),
+				asPaper,
+				canSend),
 				name);
 	}
 
@@ -99,17 +104,47 @@ public class EptoMain {
 	 * @param numActors
 	 * @throws EptoInputException
 	 */
-	public static void runSingleStar(long numActors) throws EptoInputException {
+	public static void runSingleStar(Long numSenders, Long numActors) throws EptoInputException {
 		if (numActors < 2) {
 			throw new EptoInputException("Too few actors defined");
 		}
+		long numSenders_ = numActors.longValue();
+		Boolean canSend  = null;
+		if (numSenders != null) {
+			if (numSenders.longValue() > numActors.longValue()) {
+				throw new EptoInputException("Senders cannot be greater than total num actors");
+			}
+			numSenders_ = numSenders.longValue();
+			canSend = true;
+		}
 
 		ActorSystem system = ActorSystem.create(SYSTEM_NAME);
-		ActorRef tracker;
-		tracker = createActor(system, "tracker_0");
-		List<ActorRef> peers = new ArrayList<>();
+		ActorRef tracker = null;
+
+		List<String> actorsLabel = new ArrayList<>();
+		actorsLabel.add("tracker_0");
 		for(int i = 1; i < numActors; i++) {
-			peers.add(createActor(system, "actor_" + i));
+			actorsLabel.add("actor_" + i);
+		}
+		Collections.shuffle(actorsLabel, new Random(SEED.get()));
+		List<ActorRef> peers = new ArrayList<>();
+		int i = 0;
+		ActorRef tmp;
+		for(; i < numSenders_; i++) {
+			tmp = createActor(system, actorsLabel.get(i), canSend);
+			peers.add(tmp);
+			if (actorsLabel.get(i).equals("tracker_0")) {
+				tracker = tmp;
+			}
+		}
+		// set directly to false, due to previous check
+		// (numSenders_ = numActors)
+		for(; i < numActors.longValue(); i++) {
+			tmp = createActor(system, actorsLabel.get(i), false);
+			peers.add(tmp);
+			if (actorsLabel.get(i).equals("tracker_0")) {
+				tracker = tmp;
+			}
 		}
 
 		//peers.get(23).tell(new DebugMsg(DebugType.TRACE_CACHE), null);
@@ -120,7 +155,6 @@ public class EptoMain {
 				peer.tell(new JoinMsg(tracker), null);
 			}
 			Thread.sleep(5000l);
-			tracker	.tell(new EptoActor.EptoStartMsg(), null);
 			for(ActorRef peer : peers) {
 				peer.tell(new EptoActor.EptoStartMsg(), null);
 			}
@@ -169,6 +203,9 @@ public class EptoMain {
 		// 2) define the minimum log level from which starting to print logs
 		if (config.hasPath("jepto.config.log-level"))
 			logLevel = DebugLevel.parse(config.getString("jepto.config.log-level"));
+		// 3) get num senders
+		if (config.hasPath("jepto.config.num-senders"))
+			numSenders = Long.parseUnsignedLong(config.getString("jepto.config.num-senders"));
 	}
 
 	public static void printRunParameters() {
@@ -180,7 +217,8 @@ public class EptoMain {
 		str.append("As paper:\t\t" + asPaper + "\n");
 		str.append("Cyclon view size:\t" + viewSize + "\n");
 		str.append("Cyclon shuffle length:\t"+ shuffleLength + "\n");
-		str.append("Cyclon shuffle period:\t" + shufflePeriod);
+		str.append("Cyclon shuffle period:\t" + shufflePeriod + "\n");
+		str.append("Num Senders:\t\t" + numSenders + "\n");
 		LOGGER.log(Level.INFO, "Run parameters\n" + str.toString());
 	}
 
@@ -225,11 +263,11 @@ public class EptoMain {
 		if (simTime != null) {
 			LOGGER.log(Level.INFO, "Starting run for {0} s",
 					new Object[]{simTime.toSeconds()});
-			runSingleStar(numActors);
+			runSingleStar(numSenders, numActors);
 			LOGGER.log(Level.INFO, "Terminating run");
 		} else {
 			LOGGER.log(Level.INFO, "Starting run");
-			runSingleStar(numActors);
+			runSingleStar(numSenders, numActors);
 		}
 	}
 }

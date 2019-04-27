@@ -167,7 +167,8 @@ public class ActorMain {
 	        		shuffleLength,
 	        		shufflePeriod,
 	        		SEED,
-	        		asPaper),
+	        		asPaper,
+	        		true),
 	        		participantId);
 			createActorLogFile(participantId, Level.INFO);
 			LOGGER.log(Level.INFO, "Tracker {0} started.",
@@ -193,7 +194,8 @@ public class ActorMain {
 	        		shuffleLength,
 	        		shufflePeriod,
 	        		SEED,
-	        		asPaper),
+	        		asPaper,
+	        		true),
 	        		participantId);
 
 			// Let the node send a join request
