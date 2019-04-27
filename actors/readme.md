@@ -44,7 +44,7 @@ file, execute:
 It is possible to find a skeleton configuration file at `actors/src/main/resources/run.conf`:
 ```
 # Test with n=100 peers and c=3
-#
+# Formulas:
 # K = ceil( (2 e ln n) / (ln ln n) )
 # ttl =  2 * ceil( (c+1) log_2 n ) + 1
 akka {
@@ -53,9 +53,9 @@ akka {
 }
 jepto.config {
     cyclon {
-        view-size       = 100
-        shuffle-length  = 30
-        shuffle-period-millis= 100
+        view-size             = 100
+        shuffle-length        = 30
+        shuffle-period-millis = 100
     }
     num-receivers   = 17
     max-ttl         = 43
@@ -67,6 +67,8 @@ jepto.config {
     sim-time        = 20
     # (option) if not defined, backup to "INFO"
     log-level       = "INFO"
+    # comment num-senders for continuous event generation
+    num-senders     = 1
 }
 ```
 
