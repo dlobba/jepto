@@ -24,6 +24,10 @@ def parse_logs(log_file, msg_filter_func=lambda x: False):
     message ids in order to filter them.
     """
     actor_regexp = re.compile(INFO_REGEXP)
+
+    # the set of actors that have either broadcast or
+    # delivered a message
+    actors = set()
     # the set of actor+message_id
     # for messages broadcast
     broadcast = set()
@@ -42,6 +46,8 @@ def parse_logs(log_file, msg_filter_func=lambda x: False):
             if not match:
                 continue
             actor, ts, lclock, action, argument = match.groups()
+            if actor not in actors:
+                actors.add(actor)
             time = lclock
             if actor not in delivery_order:
                 delivery_order[actor] = []
@@ -68,7 +74,7 @@ def parse_logs(log_file, msg_filter_func=lambda x: False):
                         # the current actor
                         delivery_order[actor].append(message)
                         delta_msg[message]["actors"].append(deliveryat)
-    return broadcast, delivered, delivery_order, delta_msg
+    return actors, broadcast, delivered, delivery_order, delta_msg
 
 def print_agreement(msg_delivery_rate):
     for msg, drate in msg_delivery_rate.items():
@@ -94,18 +100,27 @@ if __name__ == "__main__":
     4. the minimum and maximum delivery rate found, considering
        all the messages.
     """    
-    #filter_func = lambda x: da.filter_msg(x, 0, 0)
+    #filter_func = lambda x: da.filter_msg(x, 0, 1)
     filter_func = lambda x: False
-    broadcast, msg_delivery, delivery_order, delta_msg = parse_logs(sys.argv[1], filter_func)
+    actors, broadcast, msg_delivery, delivery_order, delta_msg = parse_logs(sys.argv[1], filter_func)
 
-    actor_msg     = da.compute_actor_msg(msg_delivery)
-    num_actors   = len(actor_msg.keys()) 
+    # msg_delivery contains an entry for each message
+    # broadcast. Filter entries not delivered by ANY actor.
+    #
+    # i.e: delivered_messages contains an entry for each message delivered
+    # at least once.
+    delivered_messages  = {message : actor_list\
+                           for message, actor_list in msg_delivery.items()\
+                           if len(actor_list) > 0}
+
+    actor_msg     = da.compute_actor_msg(delivered_messages)
+    num_actors   = len(actors)
     num_messages = len(reduce(lambda x,y: list(x) + list(y), actor_msg.values()))
     avg_msg      = int(num_messages / num_actors)
 
     epoch = da.compute_epoch(actor_msg)
 
-    delivery_rate =  da.compute_delivery_rate(msg_delivery, num_actors)
+    delivery_rate =  da.compute_delivery_rate(delivered_messages, num_actors)
     min_drate = min(delivery_rate.values())
     max_drate = max(delivery_rate.values())
 
