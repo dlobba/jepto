@@ -48,7 +48,7 @@ def parse_logs(log_file, msg_filter_func=lambda x: False):
             actor, ts, lclock, action, argument = match.groups()
             if actor not in actors:
                 actors.add(actor)
-            time = lclock
+            time = ts
             if actor not in delivery_order:
                 delivery_order[actor] = []
 
@@ -100,8 +100,8 @@ if __name__ == "__main__":
     4. the minimum and maximum delivery rate found, considering
        all the messages.
     """    
-    #filter_func = lambda x: da.filter_msg(x, 0, 1)
-    filter_func = lambda x: False
+    filter_func = lambda x: da.filter_msg(x, 0, 150)
+    #filter_func = lambda x: False
     actors, broadcast, msg_delivery, delivery_order, delta_msg = parse_logs(sys.argv[1], filter_func)
 
     # msg_delivery contains an entry for each message
