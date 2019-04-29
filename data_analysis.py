@@ -124,7 +124,7 @@ def plot_count(delay_count):
     x = list(delay_count.keys())
     x.sort()
     y = [delay_count[k] for k in x]
-    y = [sum(y[0:i]) for i in range(0, len(y))]
+    y = [sum(y[0:i+1]) for i in range(0, len(y))]
     plt.step(x, y)
     plt.show()
 
