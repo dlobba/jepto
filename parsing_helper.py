@@ -20,16 +20,20 @@ def parse_event(event_repr):
         raise ParseEventException()
     return match.groups()
 
-def parse_ball(ball):
+def parse_events(events):
     event_regexp = re.compile(r"\s*Event\s*"\
                               "\[timestamp=(\d+),\s*"\
                               "source=(\w+),\s*"\
                               "id=(\d+),\s*"
                               "action=(\w+),\s*"
                               "ttl=(\d+)\s*\]\s*")
-    events = []
-    for event in event_regexp.finditer(ball):
+    for event in event_regexp.finditer(events):
         ts, source, id, _, ttl = event.groups()
+        yield ts, source, id, ttl
+    
+def parse_ball(ball):
+    events = []
+    for ts, source, id, ttl in parse_events(ball):
         label = "{}:{}@{}_ttl={}".format(source, id, ts, ttl)
         events.append(label)
     return str.join(", ", events)

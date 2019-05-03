@@ -5,7 +5,7 @@ import sys
 import data_analysis as da
 
 from functools import reduce
-from parsing_helper import INFO_REGEXP, parse_event
+from parsing_helper import INFO_REGEXP, parse_event, parse_events
 from total_order_checker import check_actors_total_order
 
 
@@ -52,20 +52,22 @@ def parse_logs(log_file, msg_filter_func=lambda x: False):
             if actor not in delivery_order:
                 delivery_order[actor] = []
 
-            if "broadcast" in action or "delivered" in action:
+            if "broadcast" in action:
                 ts, source, msg_id = parse_event(argument)
                 message = "{}:{}".format(source,msg_id)
-
                 # perform the message filtering
                 if msg_filter_func(message):
                     continue
+                broadcast.add(message)
+                delivered[message] = []
+                delta_msg[message] = {"at" : time, "actors" : []}
 
-                if "broadcast" in action:
-                    broadcast.add(message)
-                    delivered[message] = []
-                    delta_msg[message] = {"at" : time, "actors" : []}
-                elif "delivered" in action:
-                    deliveryat = time
+            elif "delivered" in action:
+                delivered_events = re.compile(r"\s*{\s+([^}]*)\s+}")
+                deliveryat = time
+                delivered_events = delivered_events.match(argument).groups()[0]
+                for _, e_source, e_id, _ in parse_events(delivered_events):
+                    message = "{}:{}".format(e_source, e_id)
                     if message not in delivered:
                         delivered[message] = [actor]
                     else:
@@ -74,6 +76,7 @@ def parse_logs(log_file, msg_filter_func=lambda x: False):
                         # the current actor
                         delivery_order[actor].append(message)
                         delta_msg[message]["actors"].append(deliveryat)
+                
     return actors, broadcast, delivered, delivery_order, delta_msg
 
 def print_agreement(msg_delivery_rate):

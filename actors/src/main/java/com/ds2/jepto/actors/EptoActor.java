@@ -277,7 +277,19 @@ public class EptoActor extends CyclonActor {
 			this.lastDeliveredTs = event.getTimestamp();
 			this.deliver(event);
 		}
-
+		if (deliverable.isEmpty())
+			return;
+		String deliveryList = String.join(", ",
+				deliverable.toSortedList().stream()
+				.map(event -> event.toString())
+				.collect(Collectors.toList()));
+		LOGGER.log(Level.INFO,
+				"EpTO: {0} at_{2}_{3} delivered '{' {1} '}'",
+				new Object[] {
+						this.getSelf().path().name(),
+						deliveryList,
+						Long.toString(System.currentTimeMillis()),
+						this.clock.get()});
 	}
 
 
@@ -340,7 +352,6 @@ public class EptoActor extends CyclonActor {
 			this.lastDeliveredTs = event.getTimestamp();
 			this.deliver(event);
 		}
-
 	}
 
 
@@ -356,13 +367,7 @@ public class EptoActor extends CyclonActor {
 	}
 
 	private void deliver(Event event) {
-		LOGGER.log(Level.INFO,
-				"EpTO: {0} at_{2}_{3} delivered {1}",
-				new Object[] {
-						this.getSelf().path().name(),
-						event.toString(),
-						Long.toString(System.currentTimeMillis()),
-						this.clock.get()});
+		// delivered event
 	}
 
 	private void onGenEventMsg(GenEventMsg msg) {
