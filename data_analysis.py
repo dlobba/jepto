@@ -55,8 +55,8 @@ def delay_count(delay_dict, num_actors):
     Return
     ------
     A dictionary `message : <fraction-of-round-delivery>`
-    for delay value found, from the value of 0 up
-    to the largest value found.
+    for delay value found, from the lowest
+    to the largest delay value.
     """
     for m, dlist in delay_dict.items():
         tdelay = map(lambda x: (x, 1), dlist)
@@ -120,13 +120,12 @@ def compute_epoch(actor_msg):
     messages = reduce(lambda x,y: set(x).union(set(y)), actor_msg.values())
     return min(messages), max(messages)
 
-def plot_count(delay_count):
+def plot_count(delay_count, linestyle="-"):
     x = list(delay_count.keys())
     x.sort()
     y = [delay_count[k] for k in x]
     y = [sum(y[0:i+1]) for i in range(0, len(y))]
-    plt.step(x, y)
-    plt.show()
+    plt.step(x, y, linestyle=linestyle)
 
 def plot_drate_pdf(drate_dict):
     """
@@ -140,7 +139,6 @@ def plot_drate_pdf(drate_dict):
     Additionally, zero-valued bins are grouped
     within a single bar (whose value is 0).
     """
-    label = "Distribution of the delivery rate"
     # convert probabilities from float to int
     x = [int(v) for v in drate_dict.values()]
     # count how many equal values are there for each value
@@ -173,10 +171,6 @@ def plot_drate_pdf(drate_dict):
         else:
             plot_bins["{}-{}".format(i1, i2)] = v
     plt.bar(plot_bins.keys(), plot_bins.values())
-    #plt.title(label)
-    plt.xlabel("Delivery rate")
-    plt.ylabel("pdf")
-    plt.show()
     return plot_bins
 
 def plot_drate_ranges(drate_dict, range_of_interest):
@@ -197,8 +191,6 @@ def plot_drate_ranges(drate_dict, range_of_interest):
         raise ValueError()
     if right > 100:
         raise ValueError()
-    #label = "Distribution of the delivery rate in {}-{}"\
-    #        .format(left, right)
     # convert probabilities from float to int
     x = [int(v) for v in drate_dict.values()]
     # filter values not in the range of interest
