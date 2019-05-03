@@ -50,12 +50,15 @@ def wrong_exec_parser(log_file, msg_filter_func=lambda x: x is not None):
                 data.append((gclock, actor, actor,
                              "deliverable_set\\n\\n " + events_label))
             if "delivered" in action:
-                ts, source, msg_id = parse_event(argument)
-                message = "{}:{}".format(source,msg_id)
-                data.append((gclock, actor, actor,
-                             "delivered\\n\\n " + message))
-                # store delivery order
-                delivery_order[actor].append(message)
+                delivered_events = re.compile(r"\s*{\s+([^}]*)\s+}")
+                delivered_events = delivered_events.match(argument).groups()[0]
+                print(delivered_events)
+                for _, e_source, e_id, _ in parse_events(delivered_events):
+                    message = "{}:{}".format(e_source, e_id)
+                    data.append((gclock, actor, actor,
+                                 "delivered\\n\\n " + message))
+                    # store delivery order
+                    delivery_order[actor].append(message)
 
     return sorted(data, key=operator.itemgetter(0)), delivery_order
 
