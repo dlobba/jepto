@@ -1,15 +1,16 @@
 #!/usr/bin/python3
 import re
-import sys
 import os
 import glob
+import argparse
 
 import data_analysis as da
 
 from os.path import isdir
+from pathlib import Path
 from functools import reduce
 from parsing_helper import INFO_REGEXP, parse_event, parse_events
-from total_order_checker import check_actors_total_order
+from total_order_checker import check_actors_total_order, OOOException
 
 
 class ParseEventException(Exception):
@@ -79,7 +80,6 @@ def parse_logs(log_file, msg_filter_func=lambda x: False):
                         # the current actor
                         delivery_order[actor].append(message)
                         delta_msg[message]["actors"].append(deliveryat)
-                
     return actors, broadcast, delivered, delivery_order, delta_msg
 
 def print_agreement(msg_delivery_rate):
@@ -167,18 +167,16 @@ def compute_simulation_statistics(sim_log, filter_func=None,\
         da.plt.show()
     return delays_normalized
 
+def compute_simulations_statistics(folder, summary=True):
+    """
+    Given the path to the folder containing simulations results
+    (e.g. EpTOlogs) scan through the folder saving single configuration
+    folders (e.g. run_100_2).
 
-if __name__ == "__main__":
-    if sys.argv[1] == "-s":
-        delays = compute_simulation_statistics(sys.argv[2],\
-                                               summary=True,\
-                                               display=True)
-        sys.exit()
-
-    # first argument is the folder containing simulations
-    # result
-    folder = sys.argv[1]
-
+    1. Average simulations for a single configuration
+    2. Produce a graph grouping configurations having the same number
+       of actors, display how results are affected by the constant c
+    """
     files = os.listdir(folder)
     files = [folder + os.sep + file_ for file_ in files]
     folders = [file_ for file_ in files if isdir(file_)]
@@ -206,7 +204,9 @@ if __name__ == "__main__":
                                         os.sep + "*.log")
             simulation_dict = {}
             for log in simulation_logs:
-                delays = compute_simulation_statistics(log, display=False)
+                delays = compute_simulation_statistics(log,\
+                                                       summary=summary,\
+                                                       display=False)
                 for ts, percentage in delays.items():
                     try:
                         simulation_dict[ts] += percentage
@@ -225,3 +225,85 @@ if __name__ == "__main__":
         da.plt.ylabel("cdf") # the cdf on actors delivery delay
         da.plt.legend(legend, loc="upper left")
         da.plt.show()
+
+def check_simulations_total_order(folder):
+    """
+    Given a root folder, start finding every *.log file
+    and check the total order on the file, printing a status
+    line describing whether the log respected total order or not.
+    """
+    for root, dirs, files in os.walk(folder):
+        files = [file_ for file_ in files if file_.split(".")[-1] == "log"]
+        for file in files:
+            print("-"*72)
+            log_path = root + file
+            try:
+                _, _, _, delivery_order, _  = parse_logs(log_path)
+                check_actors_total_order(delivery_order)
+                status = "OK"
+            except OOOException:
+                status = "FAIL"
+            except:
+                status = "FAIL TO PARSE"
+            print("FILE: {}\nSTATUS: {}".format(log_path, status))
+
+def check_simulation_total_order(log_path):
+    """
+    Given a simulation log file, check whether it
+    respects total order.
+    In case it doesn't, print the first violation.
+    """
+    try:
+        _, _, _, delivery_order, _  = parse_logs(log_path)
+        check_actors_total_order(delivery_order)
+        print("Total order respected")
+    except OOOException as o3e:
+        print("Total order NOT respected")
+        print(str(o3e))
+
+
+if __name__ == "__main__":
+    # CLI PARSING
+    default_logs_folder = str(Path.home()) + os.sep + "EpTOlogs"
+    description = "Log analysis program to trace simulation charts" +\
+                  " check simulations total order."
+
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("--single-run", "-s",\
+                        type=str,\
+                        help="path to a specific log file to compute statistics on")
+    parser.add_argument("--logs-folder", "-f",\
+                        type=str,\
+                        help="path to the folder containing simulation" +\
+                             "logs to compute statistics on. " +\
+                             "Default folder: {}".format(default_logs_folder),\
+                        nargs="?",\
+                        const=default_logs_folder)
+    parser.add_argument("--check-dir-to", "-cf",\
+                        type=str,\
+                        help="path to the directory on which searching for logs to check for total order")
+    parser.add_argument("--check-to", "-c",\
+                        type=str,\
+                        help="path to a single simulation log to check for total order")
+
+    args = parser.parse_args()
+    # CLI PARSING - END
+    if args.single_run:
+        delays = compute_simulation_statistics(args.single_run,\
+                                               summary=True,\
+                                               display=True)
+    elif args.check_dir_to:
+        folder = args.check_dir_to
+        if folder[-1] != "/":
+            folder += "/"
+        check_simulations_total_order(folder)
+    elif args.check_to:
+        log_path = args.check_to
+        check_simulation_total_order(log_path)
+    elif args.logs_folder:
+        folder = args.logs_folder
+        if folder[-1] != "/":
+            folder += "/"
+        compute_simulations_statistics(folder, summary=True)
+    else:
+        parser.print_help()
