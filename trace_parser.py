@@ -4,7 +4,7 @@ import operator
 import sys
 
 from msc_helper import MSCHelper
-from parsing_helper import DEBUG_INFO_REGEXP, parse_event, parse_ball
+from parsing_helper import DEBUG_INFO_REGEXP, parse_events, parse_ball
 from total_order_checker import check_actors_total_order, OOOException
 
 def wrong_exec_parser(log_file, msg_filter_func=lambda x: x is not None):
@@ -52,7 +52,6 @@ def wrong_exec_parser(log_file, msg_filter_func=lambda x: x is not None):
             if "delivered" in action:
                 delivered_events = re.compile(r"\s*{\s+([^}]*)\s+}")
                 delivered_events = delivered_events.match(argument).groups()[0]
-                print(delivered_events)
                 for _, e_source, e_id, _ in parse_events(delivered_events):
                     message = "{}:{}".format(e_source, e_id)
                     data.append((gclock, actor, actor,
@@ -97,7 +96,7 @@ def make_msc(csv_data, ooo_tuple=(None,None,None,None)):
         h.add_message(source, destination, label=label, linecolor=color)
         h.new_line()
         for x in range(0, 2):
-            h.add_gap()
+            #h.add_gap()
             h.new_line()
         h.end_line()
     return h
