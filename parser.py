@@ -236,7 +236,7 @@ def check_simulations_total_order(folder):
         files = [file_ for file_ in files if file_.split(".")[-1] == "log"]
         for file in files:
             print("-"*72)
-            log_path = root + file
+            log_path = root + os.sep + file
             try:
                 _, _, _, delivery_order, _  = parse_logs(log_path)
                 check_actors_total_order(delivery_order)
