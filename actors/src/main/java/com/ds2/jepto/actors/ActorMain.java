@@ -45,6 +45,47 @@ public class ActorMain {
 		}
 	}
 
+	public static void setRunParameters(Config config) throws EptoInputException {
+		String parameters[] = new String[] {
+				"jepto.config.cyclon.view-size",
+				"jepto.config.cyclon.shuffle-length",
+				"jepto.config.cyclon.shuffle-period-millis",
+				"jepto.config.num-receivers",
+				"jepto.config.max-ttl",
+				"jepto.config.round-interval",
+				"jepto.config.as-paper"};
+		for (String param : parameters) {
+			if (config.hasPath(param) == false) {
+				throw new EptoInputException("No parameter " +
+						param +
+						" found in the run configuration file.");
+			}
+		}
+		viewSize      = Integer.parseUnsignedInt(config.getString(parameters[0]));
+		shuffleLength = Integer.parseUnsignedInt(config.getString(parameters[1]));
+		shufflePeriod = Long.parseUnsignedLong(config.getString(parameters[2]));
+		numReceivers  = Integer.parseUnsignedInt(config.getString(parameters[3]));
+		maxTtl        = Long.parseUnsignedLong(config.getString(parameters[4]));
+		roundInterval = Long.parseUnsignedLong(config.getString(parameters[5]));
+		asPaper       = Boolean.parseBoolean(config.getString(parameters[7]));
+		if (config.hasPath("jepto.config.log-level"))
+			logLevel = DebugLevel.parse(config.getString("jepto.config.log-level"));
+	}
+
+	public static void printRunParameters() {
+		StringBuilder str = new StringBuilder();
+		str.append("Seed:\t\t\t" + SEED + "\n");
+		str.append("Max ttl:\t\t" + maxTtl + "\n");
+		str.append("Max ttl:\t\t" + maxTtl + "\n");
+		str.append("Num receivers (K):\t" + numReceivers + "\n");
+		str.append("Round interval:\t\t" + roundInterval + "\n");
+		str.append("As paper:\t\t" + asPaper + "\n");
+		str.append("Cyclon view size:\t" + viewSize + "\n");
+		str.append("Cyclon shuffle length:\t"+ shuffleLength + "\n");
+		str.append("Cyclon shuffle period:\t" + shufflePeriod + "\n");
+		LOGGER.log(Level.INFO, "Run parameters\n" + str.toString());
+	}
+
 	// the logger to be recorder to file is the one related to
 	// EptoActor, not to ActorMain
 	private static final Logger LOGGER = Logger.getLogger(EptoActor.class.getName());
@@ -56,10 +97,11 @@ public class ActorMain {
 	private static int  viewSize      = 10;
 	private static int  shuffleLength = 3;
 	private static int 	numReceivers  = 3;
-	private static long max_ttl       = 5;
+	private static long maxTtl       = 5;
 	private static long roundInterval = 5000l;
 	private static long shufflePeriod = 3000l;
 
+	private static Level logLevel = Level.INFO;
 	private static boolean asPaper    = false;
 
 	private static void createActorLogFile(String actorName, Level level) {
@@ -109,7 +151,7 @@ public class ActorMain {
 /*                              MAIN                                         */
 /*---------------------------------------------------------------------------*/
 	public static void main(String[] args) throws EptoInputException {
-		// config.resource is a default property define by the typecase
+		// config.resource is a default property defined by the typecase
 		// library
 		String actorConfigFile        = System.getProperty("config.resource");
 		String defaultActorConfigFile = System.getProperty("config.resource.default");
@@ -124,11 +166,9 @@ public class ActorMain {
 			if (asPaper)
 				LOGGER.log(Level.INFO, "Starting simulation as described in the paper.");
 		}
-
 		if (actorConfigFile == null && defaultActorConfigFile == null) {
 			throw new EptoInputException("No akka config resource defined");
 		}
-
 		Config actorConfig;
 		if (actorConfigFile != null) {
 			actorConfig = ConfigFactory.load(actorConfigFile);
@@ -141,26 +181,24 @@ public class ActorMain {
 						" defined for custom actor");
 			}
 			actorConfig = actorConfig.withValue("akka.remote.netty.tcp.port",
-					ConfigValueFactory
-					.fromAnyRef(Integer.parseUnsignedInt(inputPortNumber)));
+					ConfigValueFactory.fromAnyRef(
+							Integer.parseUnsignedInt(inputPortNumber)));
 			actorConfig = actorConfig.withValue("participant.id",
 					ConfigValueFactory.fromAnyRef(inputActorId));
 			if (seed != null) {
 				SEED = Integer.parseInt(seed);
 			}
-			System.out.println("Seed: " + SEED);
 		}
+		EptoMain.setRunParameters(actorConfig);
 
 		ActorSystem system;
         ActorRef    actor;
         ActorRef    tracker = null;
-
 		if (isTracker(actorConfig)) {
-
 			// Actor init as tracker
 			String  participantId = actorConfig.getString("participant.id");
 			system = ActorSystem.create(SYSTEM_NAME, actorConfig);
-			actor = system.actorOf(EptoActor.props(max_ttl,
+			actor = system.actorOf(EptoActor.props(maxTtl,
 	        		numReceivers,
 	        		roundInterval,
 	        		viewSize,
@@ -168,12 +206,11 @@ public class ActorMain {
 	        		shufflePeriod,
 	        		SEED,
 	        		asPaper,
-	        		true),
+	        		null),
 	        		participantId);
-			createActorLogFile(participantId, Level.INFO);
+			createActorLogFile(participantId, logLevel);
 			LOGGER.log(Level.INFO, "Tracker {0} started.",
 					actor.path().name());
-
 		} else if (isPeer(actorConfig)) {
 
 			// Actor init as normal peer
@@ -187,7 +224,7 @@ public class ActorMain {
 	        		trackerAddress + "/user/" + trackerId;
 
 	        system = ActorSystem.create(SYSTEM_NAME, actorConfig);
-	        actor  = system.actorOf(EptoActor.props(max_ttl,
+	        actor  = system.actorOf(EptoActor.props(maxTtl,
 	        		numReceivers,
 	        		roundInterval,
 	        		viewSize,
@@ -195,7 +232,7 @@ public class ActorMain {
 	        		shufflePeriod,
 	        		SEED,
 	        		asPaper,
-	        		true),
+	        		null),
 	        		participantId);
 
 			// Let the node send a join request
@@ -214,17 +251,21 @@ public class ActorMain {
 						" TERMINATING...");
 				System.exit(-1);
 			}
-
-	        createActorLogFile(participantId, Level.INFO);
+	        createActorLogFile(participantId, logLevel);
 	        LOGGER.log(Level.INFO, "Peer {0} started.",
 					actor.path().name());
 	        actor.tell(new JoinMsg(tracker), null);
-
 		} else {
-
 			// Invalid settings, terminate
 			throw new EptoInputException("Invalid actor config properties given");
-
+		}
+		printRunParameters();
+		try {
+			LOGGER.info("Starting EpTO...");
+			Thread.sleep(5000);
+			actor.tell(new EptoActor.EptoStartMsg(), null);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 	}
 }
